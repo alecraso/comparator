@@ -1,4 +1,5 @@
-"""Class for using Redshift as a source database
+"""
+    Class for using Redshift as a source database
 """
 from comparator.db.postgres import PostgresDb
 

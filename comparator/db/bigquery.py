@@ -1,4 +1,5 @@
-"""Class for using Google BigQuery as a source database
+"""
+    Class for using Google BigQuery as a source database
 """
 import os
 
@@ -15,12 +16,13 @@ BIGQUERY_DEFAULT_CONN_KWARGS = {
 
 
 class BigQueryDb(BaseDb):
-    """A Google BigQuery database client
+    """
+        A Google BigQuery database client
 
-    Kwargs:
-        name : str - The canonical name to use for this instance
-        conn_kwargs : Use in place of a query string to set individual
-                      attributes of the connection defaults (project, etc)
+        Kwargs:
+            name : str - The canonical name to use for this instance
+            conn_kwargs : Use in place of a query string to set individual
+                          attributes of the connection defaults (project, etc)
     """
     _conn_kwargs = BIGQUERY_DEFAULT_CONN_KWARGS
     _db_type = None

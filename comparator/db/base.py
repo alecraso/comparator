@@ -1,4 +1,5 @@
-"""Base class for establishing connections to source databases
+"""
+    Base class for establishing connections to source databases
 """
 import os
 
@@ -28,9 +29,10 @@ class BaseDb(ABC):
 
     @abstractmethod
     def _connect(self):
-        """Connect to the source database
+        """
+            Connect to the source database
 
-        Should set self._conn with the connection object
+            Should set self._conn with the connection object
         """
         pass
 
@@ -46,7 +48,8 @@ class BaseDb(ABC):
 
     @abstractmethod
     def _close(self):
-        """Close any open connection
+        """
+            Close any open connection
         """
         pass
 
@@ -60,17 +63,18 @@ class BaseDb(ABC):
 
     @abstractmethod
     def query(self, query_string, **qwargs):
-        """Runs a query against the source database
+        """
+            Runs a query against the source database
 
-        If not connected, shoulc call self.connect() first
+            If not connected, shoulc call self.connect() first
 
-        Args:
-            query_string : str - The query to run against the database
+            Args:
+                query_string : str - The query to run against the database
 
-        Kwargs:
-            qwargs : Arbitrary parameters to pass to the query engine
+            Kwargs:
+                qwargs : Arbitrary parameters to pass to the query engine
 
-        Returns:
-            list of tuples - The records returned from the database
+            Returns:
+                list of tuples - The records returned from the database
         """
         pass

@@ -1,4 +1,5 @@
-"""Class for using Postgres as a source database
+"""
+    Class for using Postgres as a source database
 """
 import sqlalchemy
 
@@ -6,15 +7,17 @@ from comparator.db.base import BaseDb
 
 
 class PostgresDb(BaseDb):
-    """A standard Postgresql database client
+    """
+        A standard Postgresql database client
 
-    Kwargs:
-        name : str - The canonical name to use for this instance
-        conn_string : str - The connection url used to build the engine.
-                            If provided, overrides any conn_kwargs.
-        conn_params : dict - Parameters to pass to the connection
-        conn_kwargs : Use in place of a query string to set individual
-                      attributes of the connection defaults (host, user, etc)
+        Kwargs:
+            name : str - The canonical name to use for this instance
+            conn_string : str - The connection url used to build the engine.
+                                If provided, overrides any conn_kwargs.
+            conn_params : dict - Parameters to pass to the connection
+            conn_kwargs : Use in place of a query string to set individual
+                          attributes of the connection defaults
+                          (host, user, etc)
     """
     _db_type = 'postgres'
 
