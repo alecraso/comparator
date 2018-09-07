@@ -70,6 +70,17 @@ class DbConfig(object):
         else:
             self._load_dbs()
 
+    def __repr__(self):
+        return '%s -- %r' % (self.__class__, self._config)
+
+    def __str__(self):
+        return '%s: %r' % (self.__class__.__name__,
+                           [db['name'] for db in self._dbs])
+
+    @property
+    def dbs(self):
+        return self._dbs
+
     def _set_config_from_file(self, config_file):
         try:
             config = pathlib.Path(config_file)
@@ -88,7 +99,7 @@ class DbConfig(object):
 
     def _load_dbs(self):
         try:
-            dbs = yaml.safe_load(config.read_text())
+            dbs = yaml.safe_load(self._config.read_text())
         except yaml.YAMLError as exc:
             msg = 'Error parsing config file as yaml'
             if hasattr(exc, 'problem_mark'):
@@ -105,10 +116,10 @@ class DbConfig(object):
             if not isinstance(db, dict):
                 _log.warn('Misconfigured db, ignoring : %r', db)
                 continue
-            if not db.hasattr('name'):
+            if not db.get('name'):
                 _log.warn('Db has no name, ignoring : %r', db)
 
-            name = self._clean_db_name(db['name'])
+            cleaned_name = self._clean_db_name(db['name'])
 
             setattr(self, cleaned_name, db)
 
@@ -130,6 +141,6 @@ class DbConfig(object):
             cleaned_name += f'_{i}'
             while hasattr(self, cleaned_name):
                 i += 1
-                cleaned_name = cleaned_name[:-] + i
+                cleaned_name = cleaned_name[:-1] + i
 
         return cleaned_name

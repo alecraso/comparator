@@ -28,10 +28,9 @@ class BigQueryDb(BaseDb):
             conn_kwargs : Use in place of a query string to set individual
                           attributes of the connection defaults (project, etc)
     """
-    _conn_kwargs = BIGQUERY_DEFAULT_CONN_KWARGS
-    _db_type = None
 
     def __init__(self, name=None, **conn_kwargs):
+        self._conn_kwargs = BIGQUERY_DEFAULT_CONN_KWARGS
         self._name = name
         for k, v in conn_kwargs.items():
             if k in self._conn_kwargs.keys():
