@@ -1,4 +1,5 @@
-"""Comparison callables
+"""
+    Comparison callables
 """
 BASIC_COMP = 'basic'
 LEN_COMP = 'len'
