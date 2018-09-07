@@ -4,6 +4,7 @@
 import logging
 import os
 import pathlib
+import re
 import yaml
 
 _log = logging.getLogger(__name__)
@@ -107,5 +108,28 @@ class DbConfig(object):
             if not db.hasattr('name'):
                 _log.warn('Db has no name, ignoring : %r', db)
 
-            name = db['name']
-            setattr(self, name, db)
+            name = self._clean_db_name(db['name'])
+
+            setattr(self, cleaned_name, db)
+
+    def _clean_db_name(self, name):
+        """
+            Clean the db name before setting the attribute
+
+            Make sure this name hasn't been set already, or that
+            someone isn't being nasty and using something like
+            __str__  as their db name. Replace non-alphanumeric
+            characters with _.
+
+            Would replace 'my_beAutiful --Db?' with 'my_beautiful_db'
+        """
+        cleaned_name = re.sub('[\W]+', '_', name).strip('_').lower()
+
+        if hasattr(self, cleaned_name):
+            i = 1
+            cleaned_name += f'_{i}'
+            while hasattr(self, cleaned_name):
+                i += 1
+                cleaned_name = cleaned_name[:-] + i
+
+        return cleaned_name
