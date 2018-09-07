@@ -1,11 +1,15 @@
 """
     Class for using Google BigQuery as a source database
 """
+import logging
 import os
+import pathlib
 
 from google.cloud.bigquery import Client
 
 from comparator.db.base import BaseDb
+
+_log = logging.getLogger(__name__)
 
 BIGQUERY_CREDS_FILE = os.getenv('BIGQUERY_CREDS_FILE', None)
 BIGQUERY_DEFAULT_CONN_KWARGS = {
@@ -24,10 +28,9 @@ class BigQueryDb(BaseDb):
             conn_kwargs : Use in place of a query string to set individual
                           attributes of the connection defaults (project, etc)
     """
-    _conn_kwargs = BIGQUERY_DEFAULT_CONN_KWARGS
-    _db_type = None
 
     def __init__(self, name=None, **conn_kwargs):
+        self._conn_kwargs = BIGQUERY_DEFAULT_CONN_KWARGS
         self._name = name
         for k, v in conn_kwargs.items():
             if k in self._conn_kwargs.keys():
@@ -51,12 +54,22 @@ class BigQueryDb(BaseDb):
 
     def _connect(self):
         if BIGQUERY_CREDS_FILE:
-            os.environ.setdefault(
-                'GOOGLE_APPLICATION_CREDENTIALS', BIGQUERY_CREDS_FILE)
+            if pathlib.Path(BIGQUERY_CREDS_FILE).exists():
+                os.environ.setdefault(
+                    'GOOGLE_APPLICATION_CREDENTIALS', BIGQUERY_CREDS_FILE)
+            else:
+                _log.warn(
+                    'Path set by BIGQUERY_CREDS_FILE does not exist: %s',
+                    BIGQUERY_CREDS_FILE)
         self._conn = Client(**self._conn_kwargs)
         self._connected = True
 
     def _close(self):
+        """
+            This is a no-op because the bigquery Client doesn't
+            have a close method. The BaseDb close method will handle
+            setting self._conn to None and self._connected to False.
+        """
         return
 
     def query(self, query_string, **qwargs):

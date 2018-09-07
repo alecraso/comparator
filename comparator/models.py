@@ -2,6 +2,7 @@
     Base classes for running comparisons between two databases
 """
 import logging
+import pprint
 
 from past.builtins import basestring
 
@@ -28,9 +29,9 @@ class Comparator(object):
                                  results of the two queries. Strings that
                                  correspond to the comparison constants can
                                  also be passed.
+
+         TODO(aaronbiller): Add a diff() method
     """
-    _comps = list()
-    _results = tuple()
 
     def __init__(
             self,
@@ -50,13 +51,19 @@ class Comparator(object):
         if not isinstance(comparisons, list):
             comparisons = [comparisons]
 
+        self._comps = list()
         for comp in comparisons:
             if callable(comp):
                 self._comps.append(comp)
             elif COMPS.get(comp, None):
                 self._comps.append(COMPS[comp])
 
+        self._results = tuple()
+
     @property
+    def raw_results(self):
+        return self._results
+
     def results(self, run=False):
         """
             Get the results of the two queries
@@ -70,7 +77,8 @@ class Comparator(object):
         """
         if run and not self._results:
             self._get_results()
-        return self._results
+        pp = pprint.PrettyPrinter(indent=2, depth=6, compact=True)
+        return pp.pprint(self._results)
 
     def _set_queries(self, q, lq, rq):
         """

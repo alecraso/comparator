@@ -19,11 +19,11 @@ class PostgresDb(BaseDb):
                           attributes of the connection defaults
                           (host, user, etc)
     """
-    _db_type = 'postgres'
 
     def __init__(
             self,
             name=None, conn_string=None, conn_params={}, **conn_kwargs):
+        self._db_type = 'postgres'
         self._name = name
 
         if conn_string is not None:
