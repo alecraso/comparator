@@ -1,9 +1,16 @@
 """
     Base class for establishing connections to source databases
 """
-import os
+from __future__ import unicode_literals
 
-from abc import ABC, abstractmethod
+import abc
+import os
+import sys
+
+if sys.version_info >= (3, 4):
+    ABC = abc.ABC
+else:
+    ABC = abc.ABCMeta(str('ABC'), (), {})
 
 
 uname = os.uname()[1]
@@ -27,7 +34,7 @@ class BaseDb(ABC):
     def connected(self):
         return self._connected
 
-    @abstractmethod
+    @abc.abstractmethod
     def _connect(self):
         """
             Connect to the source database
@@ -46,7 +53,7 @@ class BaseDb(ABC):
         if self._conn:
             self._connected = True
 
-    @abstractmethod
+    @abc.abstractmethod
     def _close(self):
         """
             Close any open connection
@@ -61,7 +68,7 @@ class BaseDb(ABC):
         self._conn = None
         self._connected = False
 
-    @abstractmethod
+    @abc.abstractmethod
     def query(self, query_string, **qwargs):
         """
             Runs a query against the source database

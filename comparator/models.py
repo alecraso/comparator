@@ -91,7 +91,8 @@ class Comparator(object):
             if not isinstance(q, basestring):
                 raise ValueError('query must be a valid string')
             if lq or rq:
-                _log.warn('query is set, overriding left_ and right_ kwargs')
+                _log.warning(
+                    'query is set, overriding left_ and right_ kwargs')
             self._left_query = q
             self._right_query = q
         else:

@@ -3,7 +3,12 @@
 """
 import logging
 import os
-import pathlib
+
+try:
+    from pathlib import Path
+    Path().expanduser()
+except (ImportError, AttributeError):
+    from pathlib2 import Path
 
 from google.cloud.bigquery import Client
 
@@ -54,11 +59,11 @@ class BigQueryDb(BaseDb):
 
     def _connect(self):
         if BIGQUERY_CREDS_FILE:
-            if pathlib.Path(BIGQUERY_CREDS_FILE).exists():
+            if Path(BIGQUERY_CREDS_FILE).exists():
                 os.environ.setdefault(
                     'GOOGLE_APPLICATION_CREDENTIALS', BIGQUERY_CREDS_FILE)
             else:
-                _log.warn(
+                _log.warning(
                     'Path set by BIGQUERY_CREDS_FILE does not exist: %s',
                     BIGQUERY_CREDS_FILE)
         self._conn = Client(**self._conn_kwargs)
