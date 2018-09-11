@@ -12,6 +12,10 @@ install:
 test:
 	python3 setup.py test
 
+.PHONY: coveralls
+coveralls:
+	pytest -v --cov coveralls --cov-report term-missing
+
 .PHONY: clean
 clean:
 	find . -iname '*.pyc' -delete
