@@ -5,7 +5,7 @@ import pytest
 from comparator.db import BaseDb, PostgresDb
 
 uname = os.uname()[1]
-expected_default_url = 'postgres://{0}@localhost:5432/{0}'.format(uname)
+expected_default_url = 'postgresql://{0}@localhost:5432/{0}'.format(uname)
 query = 'select * from nowhere'
 
 
@@ -14,7 +14,7 @@ def test_postgres():
 
     assert isinstance(pg, BaseDb)
     assert pg._name is None
-    assert pg._db_type == 'postgres'
+    assert pg._db_type == 'postgresql'
 
     assert repr(pg) == "<class 'comparator.db.postgres.PostgresDb'> -- {}".format(expected_default_url)
     assert str(pg) == 'localhost'
@@ -25,7 +25,7 @@ def test_with_kwargs():
     pg1 = PostgresDb(name)
     assert str(pg1) == name
 
-    conn_string = 'postgres://user:pass@host:5432/db'
+    conn_string = 'postgresql://user:pass@host:5432/db'
     pg2 = PostgresDb(conn_string=conn_string)
     pg2._conn_kwargs is None
     assert str(pg2) == 'host'

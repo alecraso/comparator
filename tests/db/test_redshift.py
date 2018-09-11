@@ -33,4 +33,4 @@ def test_postgres_and_redshift():
 
     assert pg._conn_kwargs
     assert pg._conn_kwargs['port'] == 5432
-    assert pg._db_type == 'postgres'
+    assert pg._db_type == 'postgresql'
