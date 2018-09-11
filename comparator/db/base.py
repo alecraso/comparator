@@ -28,7 +28,7 @@ class BaseDb(ABC):
     _connected = False
     _conn = None
     _db_type = None
-    _conn_kwargs = DEFAULT_CONN_KWARGS
+    _conn_kwargs = None
 
     @property
     def connected(self):

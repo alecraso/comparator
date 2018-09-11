@@ -1,9 +1,17 @@
+venv:
+	python3 -m venv ./venv
+
+hooks:
+	bash bin/setup_hooks.sh
+
+.PHONY: install
 install:
 	pip install -e .
 
+.PHONY: test
 test:
 	pytest
 
-test-html:
-	pytest --cov-report=html
-	open htmlcov/index.html
+.PHONY: clean
+clean:
+	find . -iname '*.pyc' -delete

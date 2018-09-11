@@ -1,0 +1,67 @@
+import mock
+import os
+import pytest
+
+from comparator.db import BaseDb, PostgresDb
+
+uname = os.uname()[1]
+expected_default_url = 'postgres://{0}@localhost:5432/{0}'.format(uname)
+query = 'select * from nowhere'
+
+
+def test_postgres():
+    pg = PostgresDb()
+
+    assert isinstance(pg, BaseDb)
+    assert pg._name is None
+    assert pg._db_type == 'postgres'
+
+    assert repr(pg) == "<class 'comparator.db.postgres.PostgresDb'> -- {}".format(expected_default_url)
+    assert str(pg) == 'localhost'
+
+
+def test_with_kwargs():
+    name = 'Euphegenia Doubtfire, dear.'
+    pg1 = PostgresDb(name)
+    assert str(pg1) == name
+
+    conn_string = 'postgres://user:pass@host:5432/db'
+    pg2 = PostgresDb(conn_string=conn_string)
+    pg2._conn_kwargs is None
+    assert str(pg2) == 'host'
+
+    host = 'notlocahost'
+    pg3 = PostgresDb(host=host)
+    assert pg3._conn_kwargs['host'] == host
+
+    with pytest.raises(ValueError):
+        PostgresDb(conn_string=42)
+
+
+def test_connection(mock_create_engine):
+    with mock.patch('comparator.db.postgres.sqlalchemy.create_engine', mock_create_engine):
+        pg = PostgresDb()
+
+    assert pg._engine.url == expected_default_url
+    assert pg._conn is None
+    assert pg.connected is False
+
+    pg.connect()
+    assert pg._conn
+    assert pg.connected is True
+
+    results = pg.query(query)
+    assert results == [query]
+
+    pg.close()
+    assert not pg._conn
+    assert pg.connected is False
+
+
+def test_query_without_connection(mock_create_engine):
+    with mock.patch('comparator.db.postgres.sqlalchemy.create_engine', mock_create_engine):
+        pg = PostgresDb()
+
+    pg.query(query)
+    assert pg._conn
+    assert pg.connected is True
