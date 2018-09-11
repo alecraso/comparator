@@ -3,18 +3,19 @@
 """
 import logging
 import os
-import pathlib
 import re
 import yaml
+
+try:
+    from pathlib import Path
+    Path().expanduser()  # pragma: no cover
+except (ImportError, AttributeError):
+    from pathlib2 import Path
 
 _log = logging.getLogger(__name__)
 
 
-DEFAULT_CONFIG_FILE = pathlib.Path('~/.comparator/config.yaml').expanduser()
-
-env_config_file = os.getenv('COMPARATOR_CONFIG_FILE', None)
-if env_config_file is not None:
-    env_config_file = pathlib.Path(env_config_file).expanduser().resolve()
+DEFAULT_CONFIG_FILE = Path('~/.comparator/config.yaml').expanduser()
 
 
 class DbConfig(object):
@@ -58,11 +59,13 @@ class DbConfig(object):
             self._set_config_from_file(config_file)
 
         if self._config is None:
-            if env_config_file is not None:
+            env_config_file = os.getenv('COMPARATOR_CONFIG_FILE', None)
+            if env_config_file:
                 _log.info('Setting config from environment variable')
+                env_config_file = Path(env_config_file).expanduser().resolve()
                 self._set_config_from_file(env_config_file)
             else:
-                _log.warn('Environment variable not set, falling back')
+                _log.warning('Environment variable not set, falling back')
                 self._set_config_from_file(DEFAULT_CONFIG_FILE)
 
         if self._config is None:
@@ -75,7 +78,9 @@ class DbConfig(object):
 
     def __str__(self):
         return '%s: %r' % (self.__class__.__name__,
-                           [db['name'] for db in self._dbs])
+                           [db['name'] for db in self.dbs
+                            if isinstance(db, dict) and
+                            db.get('name')])
 
     @property
     def dbs(self):
@@ -83,15 +88,15 @@ class DbConfig(object):
 
     def _set_config_from_file(self, config_file):
         try:
-            config = pathlib.Path(config_file)
+            config = Path(config_file)
         except TypeError:
-            _log.warn(
+            _log.warning(
                 'Invalid path type provided, falling back : %r',
                 config_file.__class__)
         else:
             config = config.expanduser().resolve()
             if not config.exists():
-                _log.warn(
+                _log.warning(
                     'Provided path does not exist, falling back : %s',
                     config_file)
             else:
@@ -104,8 +109,9 @@ class DbConfig(object):
             msg = 'Error parsing config file as yaml'
             if hasattr(exc, 'problem_mark'):
                 mark = exc.problem_mark
-                msg += f' at line {mark.line}, column {mark.column + 1}'
-            _log.warn(msg + ' : %s', self._config)
+                msg += ' at line {}, column {}'.format(
+                    mark.line, mark.column + 1)
+            _log.warning(msg + ' : %s', self._config)
             return
 
         if not isinstance(dbs, list):
@@ -114,10 +120,11 @@ class DbConfig(object):
 
         for db in dbs:
             if not isinstance(db, dict):
-                _log.warn('Misconfigured db, ignoring : %r', db)
+                _log.warning('Misconfigured db, ignoring : %r', db)
                 continue
             if not db.get('name'):
-                _log.warn('Db has no name, ignoring : %r', db)
+                _log.warning('Db has no name, ignoring : %r', db)
+                continue
 
             cleaned_name = self._clean_db_name(db['name'])
 
@@ -134,13 +141,13 @@ class DbConfig(object):
 
             Would replace 'my_beAutiful --Db?' with 'my_beautiful_db'
         """
-        cleaned_name = re.sub('[\W]+', '_', name).strip('_').lower()
+        cleaned_name = re.sub(r'[\W]+', '_', name).strip('_').lower()
 
         if hasattr(self, cleaned_name):
             i = 1
-            cleaned_name += f'_{i}'
+            cleaned_name += '_{}'.format(i)
             while hasattr(self, cleaned_name):
                 i += 1
-                cleaned_name = cleaned_name[:-1] + i
+                cleaned_name = cleaned_name[:-1] + str(i)
 
         return cleaned_name

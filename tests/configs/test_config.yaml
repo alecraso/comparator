@@ -1,0 +1,19 @@
+- name: "default"
+  database: "mydb"
+  host: "localhost"
+  password: "sUp3rs3cReTz"
+  port: 5432
+  username: "postgres"
+- name: "th1s is annoy;ing butwecan figureIt-out!"
+  project: "my-gewgle-proyekt"
+- database: "mydb"
+  host: "this.hostpath.toatlly.exists.com"
+  password: "m0ArSeCr1tZ"
+  port: 5432
+  username: "postgres"
+  whatsthisfor: "idunno"
+- name: "default"
+  project: "ohnoitsadupe!"
+- name: "default"
+  project: "ANOTHERONE"
+- whatamievendoinghere

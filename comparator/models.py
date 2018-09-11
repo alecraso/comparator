@@ -39,7 +39,7 @@ class Comparator(object):
             query=None, left_query=None, right_query=None,
             comparisons=None):
         if not (isinstance(left, BaseDb) and isinstance(right, BaseDb)):
-            raise ValueError('left and right both must be BaseDb instances')
+            raise TypeError('left and right both must be BaseDb instances')
         self._left = left
         self._right = right
 
@@ -57,6 +57,10 @@ class Comparator(object):
                 self._comps.append(comp)
             elif COMPS.get(comp, None):
                 self._comps.append(COMPS[comp])
+
+        if not self._comps:
+            _log.warning('No valid comparisons found, falling back to default')
+            self._comps.append(COMPS[DEFAULT_COMP])
 
         self._results = tuple()
 
@@ -77,8 +81,7 @@ class Comparator(object):
         """
         if run and not self._results:
             self._get_results()
-        pp = pprint.PrettyPrinter(indent=2, depth=6, compact=True)
-        return pp.pprint(self._results)
+        return pprint.pformat(self._results, indent=2, depth=6)
 
     def _set_queries(self, q, lq, rq):
         """
@@ -89,9 +92,10 @@ class Comparator(object):
 
         if q is not None:
             if not isinstance(q, basestring):
-                raise ValueError('query must be a valid string')
+                raise TypeError('query must be a valid string')
             if lq or rq:
-                _log.warn('query is set, overriding left_ and right_ kwargs')
+                _log.warning(
+                    'query is set, overriding left_ and right_ kwargs')
             self._left_query = q
             self._right_query = q
         else:
@@ -101,7 +105,7 @@ class Comparator(object):
             if not (
                     isinstance(lq, basestring) and
                     isinstance(rq, basestring)):
-                raise ValueError(
+                raise TypeError(
                     'Both left_ and right_ queries must be strings')
             self._left_query = lq
             self._right_query = rq

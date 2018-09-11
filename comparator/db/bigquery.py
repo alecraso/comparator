@@ -3,7 +3,12 @@
 """
 import logging
 import os
-import pathlib
+
+try:
+    from pathlib import Path
+    Path().expanduser()  # pragma: no cover
+except (ImportError, AttributeError):
+    from pathlib2 import Path
 
 from google.cloud.bigquery import Client
 
@@ -11,7 +16,7 @@ from comparator.db.base import BaseDb
 
 _log = logging.getLogger(__name__)
 
-BIGQUERY_CREDS_FILE = os.getenv('BIGQUERY_CREDS_FILE', None)
+
 BIGQUERY_DEFAULT_CONN_KWARGS = {
     'project': None,
     'credentials': None,
@@ -30,7 +35,8 @@ class BigQueryDb(BaseDb):
     """
 
     def __init__(self, name=None, **conn_kwargs):
-        self._conn_kwargs = BIGQUERY_DEFAULT_CONN_KWARGS
+        self._bq_creds_file = os.getenv('BIGQUERY_CREDS_FILE', None)
+        self._conn_kwargs = dict(**BIGQUERY_DEFAULT_CONN_KWARGS)
         self._name = name
         for k, v in conn_kwargs.items():
             if k in self._conn_kwargs.keys():
@@ -42,7 +48,9 @@ class BigQueryDb(BaseDb):
     def __str__(self):
         if self._name is not None:
             return self._name
-        return self._conn_kwargs.get('project', self.__class__.__name__)
+        elif self.project is not None:
+            return self.project
+        return self.__class__.__name__
 
     @property
     def project(self):
@@ -53,14 +61,14 @@ class BigQueryDb(BaseDb):
         self._conn_kwargs['project'] = value
 
     def _connect(self):
-        if BIGQUERY_CREDS_FILE:
-            if pathlib.Path(BIGQUERY_CREDS_FILE).exists():
+        if self._bq_creds_file:
+            if Path(self._bq_creds_file).exists():
                 os.environ.setdefault(
-                    'GOOGLE_APPLICATION_CREDENTIALS', BIGQUERY_CREDS_FILE)
+                    'GOOGLE_APPLICATION_CREDENTIALS', self._bq_creds_file)
             else:
-                _log.warn(
+                _log.warning(
                     'Path set by BIGQUERY_CREDS_FILE does not exist: %s',
-                    BIGQUERY_CREDS_FILE)
+                    self._bq_creds_file)
         self._conn = Client(**self._conn_kwargs)
         self._connected = True
 
