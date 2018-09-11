@@ -10,7 +10,7 @@ try:
     from pathlib import Path
     Path().expanduser()  # pragma: no cover
 except (ImportError, AttributeError):
-    from pathlib2 import Path
+    from pathlib2 import Path  # pragma: no cover
 
 _log = logging.getLogger(__name__)
 

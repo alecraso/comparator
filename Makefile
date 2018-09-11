@@ -6,11 +6,11 @@ hooks:
 
 .PHONY: install
 install:
-	pip install -e .
+	python3 setup.py install
 
 .PHONY: test
 test:
-	pytest
+	python3 setup.py test
 
 .PHONY: clean
 clean:

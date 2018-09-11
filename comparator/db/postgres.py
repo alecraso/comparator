@@ -3,6 +3,8 @@
 """
 import sqlalchemy
 
+from past.builtins import basestring
+
 from comparator.db.base import BaseDb, DEFAULT_CONN_KWARGS
 
 
@@ -19,7 +21,7 @@ class PostgresDb(BaseDb):
                           attributes of the connection defaults
                           (host, user, etc)
     """
-    _db_type = 'postgres'
+    _db_type = 'postgresql'
 
     def __init__(
             self,

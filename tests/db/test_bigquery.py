@@ -85,7 +85,11 @@ def test_connection():
 
 
 def test_connection_with_env():
-    del os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+    try:
+        del os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+    except KeyError:
+        pass
+
     with mock.patch.dict('comparator.db.bigquery.os.environ', {'BIGQUERY_CREDS_FILE': test_creds_path}):
         bq = BigQueryDb()
 
@@ -102,7 +106,11 @@ def test_connection_with_env():
 
 
 def test_connection_with_bad_env():
-    del os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+    try:
+        del os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+    except KeyError:
+        pass
+
     with mock.patch.dict('comparator.db.bigquery.os.environ', {'BIGQUERY_CREDS_FILE': test_creds_not_exist_path}):
         bq = BigQueryDb()
 
