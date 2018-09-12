@@ -18,6 +18,7 @@ setup(
         'mock',
     ],
     install_requires=[
+        'coveralls',
         'future==0.16.0',
         'google-cloud-bigquery==1.5.0',
         'psycopg2-binary==2.7.5',
