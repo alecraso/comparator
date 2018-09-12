@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='comparator',
-    version='0.1.0',
+    version='0.1.1',
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
@@ -18,7 +18,6 @@ setup(
         'mock',
     ],
     install_requires=[
-        'coveralls',
         'future==0.16.0',
         'google-cloud-bigquery==1.5.0',
         'psycopg2-binary==2.7.5',

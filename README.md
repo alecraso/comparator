@@ -5,6 +5,12 @@
 
 Comparator is a utility for comparing the results of queries run against two databases. Future development will include support for APIs, static files, and more.
 
+
+## Installation
+```bash
+pip install comparator
+```
+
 ## Usage
 ### Overview
 ```py

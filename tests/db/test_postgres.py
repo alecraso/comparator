@@ -3,6 +3,7 @@ import os
 import pytest
 
 from comparator.db import BaseDb, PostgresDb
+from comparator.db.base import DEFAULT_CONN_KWARGS
 
 uname = os.uname()[1]
 expected_default_url = 'postgresql://{0}@localhost:5432/{0}'.format(uname)
@@ -36,6 +37,9 @@ def test_with_kwargs():
 
     with pytest.raises(ValueError):
         PostgresDb(conn_string=42)
+
+    pg4 = PostgresDb(part=5432, horse='localhorse')
+    assert pg4._conn_kwargs == DEFAULT_CONN_KWARGS
 
 
 def test_connection(mock_create_engine):

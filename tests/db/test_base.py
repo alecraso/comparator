@@ -28,6 +28,8 @@ def test_base_db():
     assert db._conn is None
     assert db.connected is False
 
+    db.close()
+
     with pytest.raises(TypeError):
         db.query()
 

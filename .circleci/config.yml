@@ -22,6 +22,7 @@ jobs:
             make venv
             . venv/bin/activate
             make install
+            pip3 install coveralls
 
       - save_cache:
           paths:

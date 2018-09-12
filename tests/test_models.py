@@ -102,6 +102,7 @@ def test_results_run():
     with mock.patch.object(c._left, 'query', return_value=left_results) as lq:
         with mock.patch.object(c._right, 'query', return_value=right_results) as rq:
             res = c.results(run=True)
+    c.results(run=True)
 
     assert lq.call_count == 1
     assert rq.call_count == 1
