@@ -1,11 +1,13 @@
-.DEFAULT_GOAL: build
+.DEFAULT_GOAL := build
 
+.PHONY: venv
 venv:
 	python3 -m venv ./venv
 
 hooks:
 	bash bin/setup_hooks.sh
 
+.PHONY: build
 build:
 	python3 setup.py sdist
 
