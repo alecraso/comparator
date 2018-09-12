@@ -1,4 +1,4 @@
-![Comparator](docs/comparator.jpg "Comparator")
+![Comparator](https://raw.githubusercontent.com/aaronbiller/comparator/master/docs/comparator.jpg "Comparator")
 # Comparator
 
 [![CircleCI](https://circleci.com/gh/aaronbiller/comparator/tree/master.svg?style=shield)](https://circleci.com/gh/aaronbiller/comparator/tree/master)
