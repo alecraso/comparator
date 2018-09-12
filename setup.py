@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-import pathlib
-
 from setuptools import setup, find_packages
 
-cwd = pathlib.Path(__file__).resolve().parent
-long_description = cwd.joinpath('README.md').read_text()
+
+with open('README.md', encoding='utf-8') as f:
+    long_description = f.read()
 
 
 setup(

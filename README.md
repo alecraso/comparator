@@ -1,4 +1,5 @@
-<div align="center"><img src="docs/comparator.jpg" alt="Comparator" height="384" width="576"><h1>Comparator</h1></div>
+[![Comparator](docs/comparator.jpg "Comparator")]
+# Comparator
 
 [![CircleCI](https://circleci.com/gh/aaronbiller/comparator/tree/master.svg?style=shield)](https://circleci.com/gh/aaronbiller/comparator/tree/master)
 [![Coverage Status](https://coveralls.io/repos/github/aaronbiller/comparator/badge.svg?branch=master)](https://coveralls.io/github/aaronbiller/comparator?branch=master)
@@ -13,7 +14,7 @@ pip install comparator
 
 ## Usage
 ### Overview
-```py
+```python
 from comparator import Comparator
 from comparator.config import DbConfig
 from comparator.db import PostgresDb
@@ -33,7 +34,7 @@ c.run_comparisons()
 
 ### Included Comparisons
 There are some basic comparisons included, and they can be imported and passed using constants.
-```py
+```python
 from comparator.comps import BASIC_COMP, LEN_COMP
 
 c = Comparator(l, r, query, comparisons=[BASIC_COMP, LEN_COMP])
@@ -45,7 +46,7 @@ c.run_comparisons()
 
 ### Queries and Exceptions
 It's possible to run different queries against each database. You can raise exceptions if that's your speed.
-```py
+```python
 lq = 'SELECT * FROM my_table ORDER BY 1'
 rq = 'SELECT id, uuid, name FROM reporting.my_table ORDER BY 1'
 comparisons = [BASIC_COMP, LEN_COMP]
@@ -59,7 +60,7 @@ for name, success in c.compare():
 
 ### Custom Comparisons
 Finally, you'll probably want to define your own comparison checks. You can do so by defining functions that accept `left` and `right` args, which, if coming from one of the included database classes, will be a list of tuples representing your query result. Perform whatever magic you like, and return a boolean.
-```py
+```python
 def left_is_longer(left, right):
     # Return True if left contains more rows than right
     return len(left) > len(right)
