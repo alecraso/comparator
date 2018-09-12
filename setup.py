@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-import pathlib
-
 from setuptools import setup, find_packages
 
-cwd = pathlib.Path(__file__).resolve().parent
-long_description = cwd.joinpath('README.md').read_text()
+
+with open('README.md', encoding='utf-8') as f:
+    long_description = f.read()
 
 
 setup(
     name='comparator',
-    version='0.1.2',
+    version='0.1.0',
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
