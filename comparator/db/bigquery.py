@@ -4,11 +4,11 @@
 import logging
 import os
 
-try:
+try:  # pragma: no cover
     from pathlib import Path
-    Path().expanduser()  # pragma: no cover
-except (ImportError, AttributeError):
-    from pathlib2 import Path  # pragma: no cover
+    Path().expanduser()
+except (ImportError, AttributeError):  # pragma: no cover
+    from pathlib2 import Path
 
 from google.cloud.bigquery import Client
 

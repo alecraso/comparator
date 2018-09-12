@@ -7,9 +7,9 @@ import abc
 import os
 import sys
 
-if sys.version_info >= (3, 4):
+if sys.version_info >= (3, 4):  # pragma: no cover
     ABC = abc.ABC
-else:
+else:  # pragma: no cover
     ABC = abc.ABCMeta(str('ABC'), (), {})
 
 

@@ -17,6 +17,7 @@ test_not_exist_config_file = Path('./im_not_real.yaml').resolve()
 test_config_path = Path.cwd().as_posix() + '/tests/configs/test_config.yaml'
 test_bad_config_path = Path.cwd().as_posix() + '/tests/configs/test_bad_config.yaml'
 test_nolist_config_path = Path.cwd().as_posix() + '/tests/configs/test_nolist_config.yaml'
+test_nonexistent_config_path = 'tests/configs/test_nothere_config.yaml'
 
 expected_db_list = [
     {
@@ -97,6 +98,10 @@ def test_file_not_exists():
     with mock.patch('comparator.config.DEFAULT_CONFIG_FILE', None):
         with pytest.raises(AttributeError):
             comparator.config.DbConfig()
+
+    with mock.patch('comparator.config.DEFAULT_CONFIG_FILE', test_config_file):
+        conf = comparator.config.DbConfig(test_nonexistent_config_path)
+    assert conf._config == test_config_file
 
 
 def test_config_attributes():

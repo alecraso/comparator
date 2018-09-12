@@ -8,6 +8,7 @@ except (ImportError, AttributeError):
     from pathlib2 import Path
 
 from comparator.db import BaseDb, BigQueryDb
+from comparator.db.bigquery import BIGQUERY_DEFAULT_CONN_KWARGS
 
 uname = os.uname()[1]
 project = 'my-project'
@@ -60,6 +61,9 @@ def test_with_kwargs():
     assert str(bq3) == 'BigQueryDb'
     bq3.project = project
     assert str(bq3) == project
+
+    bq4 = BigQueryDb(genuflect='the-vatican-rag', locution='DE')
+    assert bq4._conn_kwargs == BIGQUERY_DEFAULT_CONN_KWARGS
 
 
 def test_connection():

@@ -6,11 +6,11 @@ import os
 import re
 import yaml
 
-try:
+try:  # pragma: no cover
     from pathlib import Path
-    Path().expanduser()  # pragma: no cover
-except (ImportError, AttributeError):
-    from pathlib2 import Path  # pragma: no cover
+    Path().expanduser()
+except (ImportError, AttributeError):  # pragma: no cover
+    from pathlib2 import Path
 
 _log = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class DbConfig(object):
             dbs = yaml.safe_load(self._config.read_text())
         except yaml.YAMLError as exc:
             msg = 'Error parsing config file as yaml'
-            if hasattr(exc, 'problem_mark'):
+            if hasattr(exc, 'problem_mark'):  # pragma: no cover
                 mark = exc.problem_mark
                 msg += ' at line {}, column {}'.format(
                     mark.line, mark.column + 1)
