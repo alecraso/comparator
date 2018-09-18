@@ -3,6 +3,7 @@
 """
 import logging
 import os
+import pandas as pd
 
 try:  # pragma: no cover
     from pathlib import Path
@@ -80,10 +81,22 @@ class BigQueryDb(BaseDb):
         """
         return
 
-    def query(self, query_string, **qwargs):
+    def _query(self, query_string):
         if not self._connected:
             self.connect()
         query_job = self._conn.query(query_string)
+        return query_job.result()
+
+    def query(self, query_string):
+        results = self._query(query_string)
         return [
             tuple([col for col in row])
-            for row in query_job.result()]
+            for row in results]
+
+    def query_df(self, query_string):
+        results = self._query(query_string)
+
+        columns = list(results[0].keys())
+        data = [list(x.values()) for x in results]
+
+        return pd.DataFrame(data=data, columns=columns)

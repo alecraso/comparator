@@ -69,3 +69,19 @@ def test_query_without_connection(mock_create_engine):
     pg.query(query)
     assert pg._conn
     assert pg.connected is True
+
+
+def test_dataframe(mock_create_engine):
+    with mock.patch('comparator.db.postgres.sqlalchemy.create_engine', mock_create_engine):
+        pg = PostgresDb()
+
+    with mock.patch('comparator.db.postgres.pd.read_sql_query') as mock_pd:
+        pg.query_df(query)
+
+        assert pg._conn
+        assert pg.connected is True
+
+        pg.query_df(query)
+
+    assert mock_pd.call_count == 2
+    mock_pd.assert_called_with(query, pg._engine)

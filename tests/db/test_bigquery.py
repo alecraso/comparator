@@ -137,3 +137,16 @@ def test_query_without_connection():
         bq.query(query)
     assert bq._conn
     assert bq.connected is True
+
+
+def test_df(mock_bq_query_result):
+    bq = BigQueryDb()
+
+    with mock.patch.object(bq, '_query', return_value=mock_bq_query_result):
+        df = bq.query_df(query)
+
+    assert len(df) == 3
+    for i, col in enumerate(df.columns):
+        assert list(mock_bq_query_result[0].keys())[i] == col
+    for i, row in enumerate(df.itertuples(index=False)):
+        assert list(mock_bq_query_result[i].values()) == list(row)

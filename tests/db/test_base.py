@@ -34,3 +34,8 @@ def test_base_db():
         db.query()
 
     db.query('select * from nowhere')
+
+    with pytest.raises(TypeError):
+        db.query_df()
+
+    db.query_df('select * from nowhere')
