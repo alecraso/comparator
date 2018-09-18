@@ -128,3 +128,20 @@ def test_custom_comparison():
             res = c.run_comparisons()
 
     assert res == expected_result
+
+
+def test_bad_output():
+    l, r = PostgresDb(), PostgresDb()
+    c = Comparator(l, r, query)
+
+    with pytest.raises(ValueError):
+        c.results(run=True, output='lithograph')
+
+    with mock.patch.object(c._left, 'query_df') as left_mock_df:
+        with mock.patch.object(c._right, 'query_df') as right_mock_df:
+            c.run_comparisons(output='df')
+
+    assert left_mock_df.call_count == 1
+    assert right_mock_df.call_count == 1
+    left_mock_df.assert_called_with(query)
+    right_mock_df.assert_called_with(query)
