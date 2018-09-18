@@ -1,5 +1,7 @@
 import pytest
 
+from google.cloud.bigquery.table import Row
+
 
 class mock_result:
     def __init__(self, sql):
@@ -29,3 +31,12 @@ def mock_create_engine():
         return mock_engine(url, **kwargs)
 
     return _create_engine
+
+
+@pytest.fixture(scope='module')
+def mock_bq_query_result():
+    return [
+        Row(['a', 'b', 'c'], {'first': 0, 'second': 1, 'third': 3}),
+        Row(['d', 'e', 'f'], {'first': 0, 'second': 1, 'third': 3}),
+        Row(['g', 'h', 'i'], {'first': 0, 'second': 1, 'third': 3}),
+    ]

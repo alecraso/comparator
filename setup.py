@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 from setuptools import setup, find_packages
 
-
 with open('README.md', encoding='utf-8') as f:
-    long_description = f.read()
+    readme = f.read()
+
+with open('CHANGES.md', encoding='utf-8') as f:
+    changes = f.read()
 
 
 setup(
     name='comparator',
-    version='0.1.0',
+    version='0.1.1',
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
-    long_description=long_description,
+    long_description=readme + '\n\n' + changes,
     long_description_content_type='text/markdown',
     license='Apache 2.0',
     keywords='utility compare database',
@@ -30,6 +32,7 @@ setup(
         'PyYAML',
         'SQLAlchemy==1.2.11',
         'sqlalchemy-redshift==0.7.1',
+        'pandas==0.23.4',
         'pytest-runner==4.2',
     ],
     extras_require={
@@ -41,6 +44,7 @@ setup(
     scripts=[],
     classifiers=[
         'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Topic :: Database',

@@ -1,6 +1,7 @@
 """
     Class for using Postgres as a source database
 """
+import pandas as pd
 import sqlalchemy
 
 from past.builtins import basestring
@@ -54,8 +55,13 @@ class PostgresDb(BaseDb):
     def _close(self):
         self._conn.close()
 
-    def query(self, query_string, **qwargs):
+    def query(self, query_string, **kwargs):
         if not self._connected:
             self.connect()
-        result = self._conn.execute(query_string, **qwargs)
+        result = self._conn.execute(query_string, **kwargs)
         return result.fetchall()
+
+    def query_df(self, query_string, **kwargs):
+        if not self._connected:
+            self.connect()
+        return pd.read_sql_query(query_string, self._engine, **kwargs)

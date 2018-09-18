@@ -1,6 +1,8 @@
 ![Comparator](https://raw.githubusercontent.com/aaronbiller/comparator/master/docs/comparator.jpg "Comparator")
 # Comparator
 
+[![pypi](https://img.shields.io/pypi/v/comparator.svg)](https://pypi.org/project/comparator/)
+[![versions](https://img.shields.io/pypi/pyversions/comparator.svg)](https://pypi.org/project/comparator/)
 [![CircleCI](https://circleci.com/gh/aaronbiller/comparator/tree/master.svg?style=shield)](https://circleci.com/gh/aaronbiller/comparator/tree/master)
 [![Coverage Status](https://coveralls.io/repos/github/aaronbiller/comparator/badge.svg?branch=master)](https://coveralls.io/github/aaronbiller/comparator?branch=master)
 
