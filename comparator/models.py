@@ -11,6 +11,12 @@ from comparator.db import BaseDb
 
 _log = logging.getLogger(__name__)
 
+OUTPUT_CHOICE_MAP = {
+    # Mapping of output types to BaseDb method
+    'list': 'query',
+    'df': 'query_df'
+}
+
 
 class Comparator(object):
     """
@@ -68,7 +74,7 @@ class Comparator(object):
     def raw_results(self):
         return self._results
 
-    def results(self, run=False):
+    def results(self, run=False, output='list'):
         """
             Get the results of the two queries
 
@@ -80,7 +86,7 @@ class Comparator(object):
                 tuple - The results of the two queries (left, right)
         """
         if run and not self._results:
-            self._get_results()
+            self._get_results(output=output)
         return pprint.pformat(self._results, indent=2, depth=6)
 
     def _set_queries(self, q, lq, rq):
@@ -110,15 +116,28 @@ class Comparator(object):
             self._left_query = lq
             self._right_query = rq
 
-    def _get_results(self):
+    def _get_results(self, output='list'):
         """
             Runs each query against its source database
+
+            Args:
+                output : (str) - One of { 'list' | 'df' }, the object
+                                 type to return.
+
+            Returns:
+                list or pandas DataFrame
         """
-        left_result = self._left.query(self._left_query)
-        right_result = self._right.query(self._right_query)
+        if output not in OUTPUT_CHOICE_MAP.keys():
+            raise ValueError(
+                'output must be one of %r' % OUTPUT_CHOICE_MAP.keys())
+
+        method = OUTPUT_CHOICE_MAP[output]
+
+        left_result = getattr(self._left, method)(self._left_query)
+        right_result = getattr(self._right, method)(self._right_query)
         self._results = (left_result, right_result)
 
-    def compare(self):
+    def compare(self, output='list'):
         """
             Generator that yields the results of each comparison
 
@@ -137,12 +156,12 @@ class Comparator(object):
                     raise Exception('Failed comparison: {}'.format(comp))
         """
         if not self._results:
-            self._get_results()
+            self._get_results(output=output)
         for comp in self._comps:
             yield comp.__name__, comp(*self._results)
 
-    def run_comparisons(self):
+    def run_comparisons(self, output='list'):
         """
             Run all comparisons and return the results
         """
-        return [r for r in self.compare()]
+        return [r for r in self.compare(output=output)]
