@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 from setuptools import setup, find_packages
 
-
-from comparator import __version__
-
 with open('README.md', encoding='utf-8') as f:
     readme = f.read()
 
@@ -13,7 +10,7 @@ with open('CHANGES.md', encoding='utf-8') as f:
 
 setup(
     name='comparator',
-    version=__version__,
+    version='0.1.1',
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
