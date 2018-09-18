@@ -10,7 +10,7 @@ with open('CHANGES.md', encoding='utf-8') as f:
 
 setup(
     name='comparator',
-    version='0.1.1',
+    version='0.2.0',
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
