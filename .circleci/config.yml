@@ -6,21 +6,13 @@ jobs:
     working_directory: ~/comparator
     steps:
       - checkout
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "setup.py" }}
-          - v1-dependencies-
       - run:
           name: install dependencies
           command: |
-            python -m venv venv || [[ -d venv ]] || virtualenv venv
+            make venv
             . venv/bin/activate
             make install
             pip install coveralls
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "setup.py" }}
       - run:
           name: run tests
           command: |

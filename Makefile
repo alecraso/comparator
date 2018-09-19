@@ -1,5 +1,9 @@
 .DEFAULT_GOAL := build
 
+.PHONY: venv
+venv:
+	python -m venv ./venv || virtualenv venv
+
 hooks:
 	bash bin/setup_hooks.sh
 
