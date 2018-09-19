@@ -1,23 +1,24 @@
 version: 2
-
 jobs:
-
   test:
     docker:
       - image: python:3.7
-
     steps:
       - checkout
-
       - run:
           name: install dependencies
           command: |
             make install
             pip install coveralls
             pip install tox
-
       - run:
           name: run tests
           command: |
             tox
             coveralls
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
