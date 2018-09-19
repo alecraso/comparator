@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+from io import open
 from setuptools import setup, find_packages
 
 with open('README.md', encoding='utf-8') as f:
@@ -10,7 +10,7 @@ with open('CHANGES.md', encoding='utf-8') as f:
 
 setup(
     name='comparator',
-    version='0.2.0',
+    version='0.2.1',
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
@@ -45,8 +45,11 @@ setup(
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Database',
         'Topic :: Utilities',
     ],

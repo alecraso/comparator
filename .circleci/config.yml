@@ -1,37 +1,23 @@
 version: 2
-jobs:
-  build:
-    docker:
-      - image: circleci/python:3.6.4
 
-    working_directory: ~/repo
+jobs:
+
+  test:
+    docker:
+      - image: python:3.7
 
     steps:
       - checkout
 
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "setup.py" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
       - run:
           name: install dependencies
           command: |
-            make venv
-            . venv/bin/activate
             make install
-            pip3 install coveralls
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "setup.py" }}
+            pip install coveralls
+            pip install tox
 
       - run:
           name: run tests
           command: |
-            . venv/bin/activate
-            make test
+            tox
             coveralls
