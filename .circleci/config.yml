@@ -13,6 +13,8 @@ jobs:
       - run:
           name: install dependencies
           command: |
+            python -m venv venv || virtualenv venv
+            . venv/bin/activate
             make install
             pip install coveralls
       - save_cache:
@@ -22,6 +24,7 @@ jobs:
       - run:
           name: run tests
           command: |
+            . venv/bin/activate
             make test
             coveralls
 
