@@ -13,7 +13,7 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            python -m venv venv || virtualenv venv
+            python -m venv venv || [[ -d venv ]] || virtualenv venv
             . venv/bin/activate
             make install
             pip install coveralls
