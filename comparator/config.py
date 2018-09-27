@@ -6,11 +6,7 @@ import os
 import re
 import yaml
 
-try:  # pragma: no cover
-    from pathlib import Path
-    Path().expanduser()
-except (ImportError, AttributeError):  # pragma: no cover
-    from pathlib2 import Path
+from comparator.util import Path
 
 _log = logging.getLogger(__name__)
 
@@ -71,6 +67,9 @@ class DbConfig(object):
         if self._config is None:
             raise AttributeError('Could not find valid configuration file')
         else:
+            _log.info(
+                'Found configuration file at %s',
+                self._config.as_posix())
             self._load_dbs()
 
     def __repr__(self):
