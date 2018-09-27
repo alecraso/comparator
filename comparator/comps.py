@@ -4,7 +4,7 @@
 BASIC_COMP = 'basic'
 LEN_COMP = 'len'
 FIRST_COMP = 'first'
-DEFAULT_COMP = FIRST_COMP
+DEFAULT_COMP = BASIC_COMP
 
 
 def basic_comp(left, right):
@@ -16,7 +16,7 @@ def len_comp(left, right):
 
 
 def first_eq_comp(left, right):
-    return left[0] == right[0]
+    return left.first() == right.first()
 
 
 COMPS = {

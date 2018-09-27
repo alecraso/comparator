@@ -1,12 +1,12 @@
 """
     Class for using Postgres as a source database
 """
-import pandas as pd
 import sqlalchemy
 
 from past.builtins import basestring
 
 from comparator.db.base import BaseDb, DEFAULT_CONN_KWARGS
+from comparator.db.query import DbQueryResult
 
 
 class PostgresDb(BaseDb):
@@ -32,14 +32,16 @@ class PostgresDb(BaseDb):
         if conn_string is not None:
             if not isinstance(conn_string, basestring):
                 raise ValueError('conn_string kwarg must be a valid string')
-            self._engine = sqlalchemy.create_engine(conn_string, **conn_params)
+            self._engine = sqlalchemy.create_engine(
+                conn_string, connect_args=conn_params)
         else:
             self._conn_kwargs = dict(**DEFAULT_CONN_KWARGS)
             for k, v in conn_kwargs.items():
                 if k in self._conn_kwargs.keys():
                     self._conn_kwargs[k] = v
             url = sqlalchemy.engine.url.URL(self._db_type, **self._conn_kwargs)
-            self._engine = sqlalchemy.create_engine(url, **conn_params)
+            self._engine = sqlalchemy.create_engine(
+                url, connect_args=conn_params)
 
     def __repr__(self):
         return '%s -- %r' % (self.__class__, self._engine.url)
@@ -59,9 +61,4 @@ class PostgresDb(BaseDb):
         if not self._connected:
             self.connect()
         result = self._conn.execute(query_string, **kwargs)
-        return result.fetchall()
-
-    def query_df(self, query_string, **kwargs):
-        if not self._connected:
-            self.connect()
-        return pd.read_sql_query(query_string, self._engine, **kwargs)
+        return DbQueryResult(result)

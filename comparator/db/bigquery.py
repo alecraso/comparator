@@ -3,17 +3,12 @@
 """
 import logging
 import os
-import pandas as pd
-
-try:  # pragma: no cover
-    from pathlib import Path
-    Path().expanduser()
-except (ImportError, AttributeError):  # pragma: no cover
-    from pathlib2 import Path
 
 from google.cloud.bigquery import Client
 
 from comparator.db.base import BaseDb
+from comparator.db.query import BigQueryResult
+from comparator.util import Path
 
 _log = logging.getLogger(__name__)
 
@@ -88,15 +83,5 @@ class BigQueryDb(BaseDb):
         return query_job.result()
 
     def query(self, query_string):
-        results = self._query(query_string)
-        return [
-            tuple([col for col in row])
-            for row in results]
-
-    def query_df(self, query_string):
-        results = self._query(query_string)
-
-        columns = list(results[0].keys())
-        data = [list(x.values()) for x in results]
-
-        return pd.DataFrame(data=data, columns=columns)
+        result = self._query(query_string)
+        return BigQueryResult(result)

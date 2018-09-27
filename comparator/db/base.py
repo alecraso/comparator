@@ -5,12 +5,8 @@ from __future__ import unicode_literals
 
 import abc
 import os
-import sys
 
-if sys.version_info >= (3, 4):  # pragma: no cover
-    ABC = abc.ABC
-else:  # pragma: no cover
-    ABC = abc.ABCMeta(str('ABC'), (), {})
+from comparator.util import ABC
 
 
 uname = os.uname()[1]
@@ -82,25 +78,6 @@ class BaseDb(ABC):
                 kwargs : Arbitrary parameters to pass to the query engine
 
             Returns:
-                list of tuples - The records returned from the database
-        """
-        pass
-
-    @abc.abstractmethod
-    def query_df(self, query_string, **kwargs):
-        """
-            Runs a query against the source database and
-            returns a pandas DataFrame
-
-            If not connected, should call self.connect() first
-
-            Args:
-                query_string : str - The query to run against the database
-
-            Kwargs:
-                kwargs : Arbitrary parameters to pass to the query engine
-
-            Returns:
-                pandas DataFrame
+                QueryResult containing the query result
         """
         pass
