@@ -17,34 +17,98 @@ from comparator.exceptions import InvalidCompSetException
 _log = logging.getLogger(__name__)
 
 
-class Comparator(object):
+class ComparatorResult(object):
     """
-        The primary comparison operator for programmatically comparing
-        the results of queries against two databases (or just one)
+        A container object to hold the results of a comparison
+
+        This primarily provides syntactic sugar on what is really just a (name, result) tuple. The "truthiness" of a
+        result can be checked easily, as well as other standard comparison operators if the particular comparison
+        returns a value other than a boolean.
 
         Args:
-            left : BaseDb - The "left" source database, against which the
-                            "left" query will run
-            right : BaseDb - The "right" source database, against which the
-                             "right" query will run
+            comparator_name : str - The name of the calling Comparator
+            name : str - The name of the comparison
+            result - The result of the comparison
+    """
+    def __init__(self, comparator_name, name, result):
+        self._cname = comparator_name
+        self._name = str(name)
+        self._result = result
+
+    def __bool__(self):
+        return bool(self._result)
+
+    __nonzero__ = __bool__
+
+    def __repr__(self):
+        return '(%r, %r)' % (self._name, self._result)
+
+    def __str__(self):
+        return str(self.__repr__())
+
+    def __getitem__(self, key):
+        if isinstance(key, (int, long)):
+            key = {0: 'name', 1: 'result'}.get(key, None)
+            if key is None:
+                raise IndexError('list index out of range')
+        if key == 'name':
+            return self._name
+        elif key == 'result':
+            return self._result
+        else:
+            raise KeyError(key)
+
+    def __eq__(self, other):
+        return self._result == other
+
+    def __ne__(self, other):
+        return self._result != other
+
+    def __gt__(self, other):
+        return self._result > other
+
+    def __ge__(self, other):
+        return self._result >= other
+
+    def __lt__(self, other):
+        return self._result < other
+
+    def __le__(self, other):
+        return self._result <= other
+
+    @property
+    def comparator_name(self):
+        return self._cname
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def result(self):
+        return self._result
+
+
+class Comparator(object):
+    """
+        The primary comparison operator for programmatically comparing the results of queries against two databases
+
+        Args:
+            left : BaseDb - The "left" source database, against which the "left" query will run
+            right : BaseDb - The "right" source database, against which the "right" query will run
             lquery : string - The query to run against the "left" database
 
         Kwargs:
             rquery : string - The query to run against the "right" database.
                               If not provided, lquery will be run against both.
             comps : string/callable or list of strings/callables
-                        - String or strings must be one of the comstants in the
-                          comps module. Otherwise, the callable or list of
-                          callables can be any function that accepts two
-                          QueryResult classes, performs arbitrary checks, and
-                          returns a boolean.
-            name : string - A name to give this particular Comparator instance,
-                            useful for checking results when instantiating
-                            multiple as part of a ComparatorSet.
+                        - String or strings must be one of the comstants in the comps module.
+                          Otherwise, the callable or list of callables can be any function that accepts two
+                          QueryResult classes, performs arbitrary checks, and returns a boolean.
+            name : string - A name to give this particular Comparator instance, useful for checking results when
+                            instantiating multiple as part of a ComparatorSet.
     """
-    def __init__(
-            self, left, right, lquery,
-            rquery=None, comps=None, name=None):
+    def __init__(self, left, right, lquery, rquery=None, comps=None, name=None):
         if not (isinstance(left, BaseDb) and isinstance(right, BaseDb)):
             raise TypeError('left and right both must be BaseDb instances')
         self._left = left
@@ -75,8 +139,14 @@ class Comparator(object):
         self._name = str(name)
 
         # Set an empty result
-        self._query_results = tuple()
-        self._results = {self._name: list()}
+        self._set_empty()
+
+    def __repr__(self):
+        return '%s : %s | %s' % (self._name)
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def query_results(self):
@@ -99,6 +169,14 @@ class Comparator(object):
 
         self._lquery = lquery
         self._rquery = rquery
+
+    def _set_empty(self):
+        """
+            Reset all results
+        """
+        self._query_results = tuple()
+        self._results = list()
+        self._complete = False
 
     def _get_query_results(self):
         """
@@ -143,41 +221,71 @@ class Comparator(object):
         """
         if not self._query_results:
             self._get_query_results()
-        for comp in self._comps:
-            name = comp.__name__
-            # Try to surface a more useful name if lambda is used
-            if name == '<lambda>':
-                source = inspect.getsource(comp)
-                name = 'lambda' + re.split('lambda', source)[1].trim()
 
-            result = (name, comp(*self._query_results))
-            self._results[self._name].append(result)
+        if not self._complete:
+            for comp in self._comps:
+                name = comp.__name__
+                # Try to surface a more useful name if lambda is used
+                if name == '<lambda>':
+                    source = inspect.getsource(comp)
+                    name = 'lambda' + re.split('lambda', source)[1].trim()
 
-            yield result
+                result = ComparatorResult(
+                    self._name, name, comp(*self._query_results))
+                self._results.append(result)
 
-    def run_comparisons(self, results_only=True):
+                yield result
+
+            self._complete = True
+
+        else:
+            for result in self._results:
+                yield result
+
+    def run_comparisons(self):
         """
             Run all comparisons and return the results
 
-            Kwargs:
-                results_only : - Whether to return the full dict with the
-                                 comparator name, or just the results list
-
             Returns:
-                dict or list of tuples
+                list of tuples
         """
-        for _ in self.compare():
-            pass
-        results = copy.deepcopy(self._results)
-        if results_only:
-            return results[self._name]
-        return results
+        if not self._complete:
+            for _ in self.compare():
+                pass
+        return copy.deepcopy(self._results)
+
+    def clear(self):
+        """
+            Clear all results to allow a refresh
+        """
+        self._set_empty()
 
 
 class ComparatorSet(object):
-    def __init__(
-            self, left, right, queries,
-            comps=None, names=None, default_comp=None):
+    """
+        A convenience wrapper around Comparators
+
+        This object is generally intended to be used with one of the two classmethods, from_dict or from_list.
+
+        It is expected that users will want to run multiple queries and comparisons against a particular database or
+        databases. The ComparatorSet can be used to bundle various queries and comparisons against source databases.
+        The resulting set of Comparator objects can be iterated upon and run/checked in a variety of ways.
+
+        Args:
+            left : BaseDb - The "left" source database, against which the "left" query will run
+            right : BaseDb - The "right" source database, against which the "right" query will run
+            queries : list - The set of two-member tuples each containing the lquery and rquery strings
+
+        Kwargs:
+            comps : list - The set of comparisons that correspond to each query pair. If None, the default_comp or
+                           global DEFAULT_COMP will be used for each. If passed, must be the same length as the list
+                           of queries.
+            names : list - The set of Comparator names that correspond to each query pair. If None, each Comparator
+                           will self-name using the left and right databases. If passed, must be the same length as
+                           the list of queries.
+            default_comp : callable - The default comparison to use if no comps are passed. Ignored if comps is passed.
+    """
+    def __init__(self, left, right, queries, comps=None, names=None, default_comp=None):
         if not (isinstance(left, BaseDb) and isinstance(right, BaseDb)):
             raise TypeError('left and right both must be BaseDb instances')
         self._left = left
@@ -206,6 +314,9 @@ class ComparatorSet(object):
 
     next = __next__
 
+    def __getitem__(self, key):
+        return self._comparisons[key]
+
     def _set_queries(self, queries):
         if not isinstance(queries, list):
             queries = [queries]
@@ -216,8 +327,7 @@ class ComparatorSet(object):
                     not isinstance(pair[0], basestring) or
                     not isinstance(pair[1], basestring)):
                 raise InvalidCompSetException(
-                    'Each query pair must only be a two-member tuple '
-                    'of strings. Problem at : %r' % pair)
+                    'Each query pair must only be a two-member tuple of strings. Problem at : %r' % pair)
 
         self._queries = queries
 
@@ -233,13 +343,11 @@ class ComparatorSet(object):
             if not callable(comp):
                 if COMPS.get(comp, None) is None:
                     raise InvalidCompSetException(
-                        'Each comp must be a callable. '
-                        'Problem at : %r' % comp)
+                        'Each comp must be a callable. Problem at : %r' % comp)
 
         if len(self._queries) != len(comps):
             raise InvalidCompSetException(
-                'Queries and comparison mapping is mismatched. '
-                'There are %d query pairs and %d comparisons' % (
+                'Queries and comparison mapping is mismatched. There are %d query pairs and %d comparisons' % (
                     len(self._queries), len(comps)))
 
         self._comps = comps
@@ -254,8 +362,7 @@ class ComparatorSet(object):
 
         if len(self._queries) != len(names):
             raise InvalidCompSetException(
-                'Queries and name mapping is mismatched. '
-                'There are %d query pairs and %d names' % (
+                'Queries and name mapping is mismatched. There are %d query pairs and %d names' % (
                     len(self._queries), len(names)))
 
         self._names = names
@@ -263,10 +370,9 @@ class ComparatorSet(object):
     @classmethod
     def from_dict(cls, left, right, dict_or_dicts, default_comp=None):
         """
-            Build a CompSet from dict(s) of query pairs and comparisons
+            Build a ComparatorSet from a dict or list of dicts of query pairs and comparisons
 
-            A single dict or a list of dicts are both valid. Each dict can
-            be constructed in the following way:
+            A single dict or a list of dicts are both valid. Each dict can be constructed in the following way:
             {
                 'name': str - A name for this Comparator, useful when viewing
                               the results of the comparisons.
@@ -275,35 +381,28 @@ class ComparatorSet(object):
                 'comps': callable or list of callables - The comparison(s) to
                                                          run against the result
             }
-            The 'lquery' and 'rquery' values are required. The 'comps' value is
-            optional, and the 'name' value is optional but recommended.
+            The 'lquery' and 'rquery' values are required. The 'comps' value is optional,
+            and the 'name' value is optional but recommended.
 
-            The 'default_comp' value can be used to set a fallback for missing
-            'comps' values. These will only be used in the case that 'comps'
-            is not set. If no default is passed, the global DEFAULT_COMP
-            will be used.
+            The 'default_comp' value can be used to set a fallback for missing 'comps' values. These will only be
+            used in the case that 'comps' is not set. If no default is passed, the global DEFAULT_COMP will be used.
 
             Args:
-                dict_or_dicts : dict or list - The queries and comps to use to
-                                               construct a new CompSet
-                default_comp : callable or list - The fallback comps to use if
-                                                  comps is not set for a set
-                                                  of queries
+                left : BaseDb - The "left" source database, against which the "left" query will run
+                right : BaseDb - The "right" source database, against which the "right" query will run
+                dict_or_dicts : dict or list - The queries and comps to use to construct a new ComparatorSet
+                default_comp : callable or list - The fallback comps to use if comps is not set for a set of queries
 
             Returns:
-                instantiated CompSet
+                instantiated ComparatorSet
         """
         if not isinstance(dict_or_dicts, (list, tuple)):
             dict_or_dicts = [dict_or_dicts]
 
         for d in dict_or_dicts:
-            if (
-                    not isinstance(d, dict) or
-                    d.get('lquery') is None or
-                    d.get('rquery') is None):
+            if (not isinstance(d, dict) or d.get('lquery') is None or d.get('rquery') is None):
                 raise InvalidCompSetException(
-                    'Each value must be a dict with lquery, rquery. '
-                    'Problem with : %r' % d)
+                    'Each value must be a dict with lquery, rquery. Problem with : %r' % d)
 
         all_names = []
         all_queries = []
@@ -318,12 +417,41 @@ class ComparatorSet(object):
 
     @classmethod
     def from_list(cls, left, right, list_or_lists, default_comp=None):
+        """
+            Build a ComparatorSet from a list or list of lists of query pairs and comparisons
+
+            A single list/tuple or a list of lists/tuples are both valid. Expected elemenets of each list or tuple
+            include:
+                1. The name of the Comparator
+                2. The "left" query
+                3. The "right query
+                4. A comparison or list of comparisons
+            Elements should always be passed in that order.
+
+            Each list or tuple can be constructed in any of the following ways:
+                - Provide all 4 elements:   ('name', 'lquery', 'rquery', [comparisons])
+                - Provide only 3 elements:  ('name', 'lquery', 'rquery')          # The default comp will be used here
+                                            (lquery', 'rquery'. [comparisons])
+                - Provide the queries only: ('lquery', 'rquery')                  # The default comp will be used here
+
+            Any other arrangement will raise errors or cause unintended downstream results. The 'lquery' and 'rquery'
+            values are required. Comparisons are optional, and 'name' is optional but recommended.
+
+            The 'default_comp' value can be used to set a fallback for missing comparisons. These will only be used in
+            the case that comparisons are not found. If no default is passed, the global DEFAULT_COMP will be used.
+
+            Args:
+                left : BaseDb - The "left" source database, against which the "left" query will run
+                right : BaseDb - The "right" source database, against which the "right" query will run
+                list_or_lists : list/tuple or list - The queries and comps to use to construct a new ComparatorSet
+                default_comp : callable or list - The fallback comps to use if comps are not given for a set of queries
+
+        """
         if not isinstance(list_or_lists, (list, tuple)):
             raise TypeError('list_or_lists must be a list or tuple')
 
         if not all(isinstance(x, (list, tuple)) for x in list_or_lists):
-            # We can assume this is a single comparison
-            # Why are you using ComparatorSet for this then?
+            # We can assume this is a single comparison... Why are you using ComparatorSet for this then?
             list_or_lists = [list_or_lists]
 
         all_names = []
@@ -360,30 +488,6 @@ class ComparatorSet(object):
                 all_comps.append(l[3])
             else:
                 raise InvalidCompSetException(
-                    'Too many or too few elements passed to properly build '
-                    'a comparison. Problem with : %r' % l)
+                    'Too many or too few elements passed to properly build a comparison. Problem with : %r' % l)
 
         return cls(left, right, all_queries, all_comps, all_names)
-
-    def compare(self):
-        """
-            Generator that yields the results of each comparison
-
-            Yields:
-                tuple : (function name, comparison result)
-        """
-        for c in self._comparisons:
-            for result in c.compare():
-                yield result
-
-    def run_comparisons(self):
-        """
-            Run all comparisons for all provided sets
-
-            Returns:
-                dict : {name: [(comparison, result), ... ], ... }
-        """
-        all_results = []
-        for c in self._comparisons:
-            all_results.append(c.run_comparisons(results_only=False))
-        return all_results

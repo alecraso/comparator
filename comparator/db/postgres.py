@@ -24,24 +24,20 @@ class PostgresDb(BaseDb):
     """
     _db_type = 'postgresql'
 
-    def __init__(
-            self,
-            name=None, conn_string=None, conn_params={}, **conn_kwargs):
+    def __init__(self, name=None, conn_string=None, conn_params={}, **conn_kwargs):
         self._name = name
 
         if conn_string is not None:
             if not isinstance(conn_string, basestring):
                 raise ValueError('conn_string kwarg must be a valid string')
-            self._engine = sqlalchemy.create_engine(
-                conn_string, connect_args=conn_params)
+            self._engine = sqlalchemy.create_engine(conn_string, connect_args=conn_params)
         else:
             self._conn_kwargs = dict(**DEFAULT_CONN_KWARGS)
             for k, v in conn_kwargs.items():
                 if k in self._conn_kwargs.keys():
                     self._conn_kwargs[k] = v
             url = sqlalchemy.engine.url.URL(self._db_type, **self._conn_kwargs)
-            self._engine = sqlalchemy.create_engine(
-                url, connect_args=conn_params)
+            self._engine = sqlalchemy.create_engine(url, connect_args=conn_params)
 
     def __repr__(self):
         return '%s -- %r' % (self.__class__, self._engine.url)

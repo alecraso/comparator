@@ -225,6 +225,6 @@ class BigQueryResult(BaseQueryResult):
                 % type(row_iterator))
 
         result = [dict(row) for row in row_iterator]
-        keys = result[0].keys()
+        keys = list(result[0].keys())
 
         super(BigQueryResult, self).__init__(result, keys)

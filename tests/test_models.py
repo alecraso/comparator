@@ -5,36 +5,53 @@ import types
 from comparator import comps
 from comparator import Comparator
 from comparator.db import PostgresDb
+from comparator.db.query import BaseQueryResult
+from comparator.models import ComparatorResult
 
 query = 'select * from nowhere'
 other_query = 'select count(*) from somewhere'
-left_results = [(1, 2, 3), (4, 5, 6)]
-right_results = [(1, 2, 3), (4, 5, 6)]
-mismatch_right_results = [(1, 2, 3), (4, 5, 6), (7, 8, 9)]
+left_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}]
+right_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}]
+mismatch_right_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}, {'a': 7, 'b': 8, 'c': 9}]
+keys = ['a', 'b', 'c']
 
-expected_default_result = [('first_eq_comp', True)]
-expected_multiple_result = [('basic_comp', True), ('len_comp', True)]
-expected_mismatch_result = [('basic_comp', False), ('len_comp', False)]
+left_results = BaseQueryResult(left_query_results, keys)
+right_results = BaseQueryResult(right_query_results, keys)
+mismatch_right_results = BaseQueryResult(mismatch_right_query_results, keys)
+
+expected_default_result = ('basic_comp', True)
+expected_multiple_result = [
+    ComparatorResult('test', 'first_eq_comp', True),
+    ComparatorResult('test', 'len_comp', True)]
+expected_mismatch_result = [
+    ComparatorResult('test', 'first_eq_comp', True),
+    ComparatorResult('test', 'len_comp', False)]
 
 
 def test_comparator():
     l, r = PostgresDb(), PostgresDb()
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(TypeError):
         Comparator(l, r)
 
     with pytest.raises(TypeError):
         Comparator(l, r, 1234)
 
     with pytest.raises(TypeError):
-        Comparator(l, 'derp', query)
+        Comparator(l, 'derp', query, query)
 
     c = Comparator(l, r, query)
-    assert c._left_query == query
-    assert c._right_query == query
+    assert c._lquery == query
+    assert c._rquery == query
     assert c._comps == [comps.COMPS.get(comps.DEFAULT_COMP)]
 
-    assert c.raw_results == tuple()
+    c = Comparator(l, r, query, other_query, comps.FIRST_COMP)
+    assert c._lquery == query
+    assert c._rquery == other_query
+    assert c._comps == [comps.COMPS.get(comps.FIRST_COMP)]
+
+    assert c.query_results == tuple()
+    assert c.results == list()
 
 
 def test_compare_defaults():
@@ -43,23 +60,21 @@ def test_compare_defaults():
 
     with mock.patch.object(c._left, 'query', return_value=left_results):
         with mock.patch.object(c._right, 'query', return_value=right_results):
-            c._get_results()
-    assert c.raw_results == (left_results, right_results)
+            assert c.get_query_results() == (left_results, right_results)
 
     assert isinstance(c.compare(), types.GeneratorType)
-    res = c.run_comparisons()
-    assert res == expected_default_result
+    res = c.run_comparisons()[0]
+    assert (res.name, res.result) == expected_default_result
 
 
 def test_compare_multiple():
     l, r = PostgresDb(), PostgresDb()
-    comparisons = [comps.BASIC_COMP, comps.LEN_COMP]
-    c = Comparator(l, r, query, comparisons=comparisons)
+    comparisons = [comps.FIRST_COMP, comps.LEN_COMP]
+    c = Comparator(l, r, query, comps=comparisons)
 
     with mock.patch.object(c._left, 'query', return_value=left_results):
         with mock.patch.object(c._right, 'query', return_value=right_results):
-            c._get_results()
-    assert c.raw_results == (left_results, right_results)
+            assert c.get_query_results() == (left_results, right_results)
 
     for i, result in enumerate(c.compare()):
         assert result == expected_multiple_result[i]
@@ -67,32 +82,29 @@ def test_compare_multiple():
 
 def test_compare_mismatch():
     l, r = PostgresDb(), PostgresDb()
-    comparisons = [comps.BASIC_COMP, comps.LEN_COMP]
-    c = Comparator(l, r, query, comparisons=comparisons)
+    comparisons = [comps.FIRST_COMP, comps.LEN_COMP]
+    c = Comparator(l, r, query, comps=comparisons)
 
     with mock.patch.object(c._left, 'query', return_value=left_results):
         with mock.patch.object(c._right, 'query', return_value=mismatch_right_results):
             res = c.run_comparisons()
-    assert c.raw_results == (left_results, mismatch_right_results)
+    assert c._query_results == (left_results, mismatch_right_results)
     assert res == expected_mismatch_result
 
 
 def test_left_right_queries():
     l, r = PostgresDb(), PostgresDb()
 
-    with pytest.raises(AttributeError):
-        Comparator(l, r, left_query=query)
-
     with pytest.raises(TypeError):
-        Comparator(l, r, left_query=query, right_query=1234)
+        Comparator(l, r, lquery=query, rquery=1234)
 
-    c1 = Comparator(l, r, query=query, right_query=other_query)
-    assert c1._left_query == query
-    assert c1._right_query == query
+    c1 = Comparator(l, r, lquery=query)
+    assert c1._lquery == query
+    assert c1._rquery == query
 
-    c = Comparator(l, r, left_query=query, right_query=other_query)
-    assert c._left_query == query
-    assert c._right_query == other_query
+    c = Comparator(l, r, query, other_query)
+    assert c._lquery == query
+    assert c._rquery == other_query
 
 
 def test_results_run():
@@ -101,47 +113,30 @@ def test_results_run():
 
     with mock.patch.object(c._left, 'query', return_value=left_results) as lq:
         with mock.patch.object(c._right, 'query', return_value=right_results) as rq:
-            res = c.results(run=True)
-    c.results(run=True)
+            res = c.get_query_results(run=True)
+    c.get_query_results(run=True)
 
     assert lq.call_count == 1
     assert rq.call_count == 1
-    assert res == str((left_results, right_results))
+    assert res == (left_results, right_results)
 
 
 def test_no_comps():
     l, r = PostgresDb(), PostgresDb()
-    c = Comparator(l, r, query, comparisons='notarealcomparison')
+    c = Comparator(l, r, query, comps='notarealcomparison')
     assert c._comps == [comps.COMPS.get(comps.DEFAULT_COMP)]
 
 
 def test_custom_comparison():
     def custom_comp(left, right):
         return len(left) < len(right)
-    expected_result = [('custom_comp', True)]
+    expected_result = [ComparatorResult('test', 'custom_comp', True)]
 
     l, r = PostgresDb(), PostgresDb()
-    c = Comparator(l, r, query, comparisons=custom_comp)
+    c = Comparator(l, r, query, comps=custom_comp)
 
     with mock.patch.object(c._left, 'query', return_value=left_results):
         with mock.patch.object(c._right, 'query', return_value=mismatch_right_results):
             res = c.run_comparisons()
 
     assert res == expected_result
-
-
-def test_bad_output():
-    l, r = PostgresDb(), PostgresDb()
-    c = Comparator(l, r, query)
-
-    with pytest.raises(ValueError):
-        c.results(run=True, output='lithograph')
-
-    with mock.patch.object(c._left, 'query_df') as left_mock_df:
-        with mock.patch.object(c._right, 'query_df') as right_mock_df:
-            c.run_comparisons(output='df')
-
-    assert left_mock_df.call_count == 1
-    assert right_mock_df.call_count == 1
-    left_mock_df.assert_called_with(query)
-    right_mock_df.assert_called_with(query)

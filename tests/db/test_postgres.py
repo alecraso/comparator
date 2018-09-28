@@ -2,12 +2,15 @@ import mock
 import os
 import pytest
 
-from comparator.db import BaseDb, PostgresDb
-from comparator.db.base import DEFAULT_CONN_KWARGS
+from comparator.db import PostgresDb
+from comparator.db.base import BaseDb, DEFAULT_CONN_KWARGS
 
 uname = os.uname()[1]
 expected_default_url = 'postgresql://{0}@localhost:5432/{0}'.format(uname)
 query = 'select * from nowhere'
+expected_query_results = [{'first': 'a', 'second': 'b', 'third': 'c'},
+                          {'first': 'd', 'second': 'e', 'third': 'f'},
+                          {'first': 'g', 'second': 'h', 'third': 'i'}]
 
 
 def test_postgres():
@@ -55,7 +58,7 @@ def test_connection(mock_create_engine):
     assert pg.connected is True
 
     results = pg.query(query)
-    assert results == [query]
+    assert results.result == expected_query_results
 
     pg.close()
     assert not pg._conn
@@ -69,19 +72,3 @@ def test_query_without_connection(mock_create_engine):
     pg.query(query)
     assert pg._conn
     assert pg.connected is True
-
-
-def test_dataframe(mock_create_engine):
-    with mock.patch('comparator.db.postgres.sqlalchemy.create_engine', mock_create_engine):
-        pg = PostgresDb()
-
-    with mock.patch('comparator.db.postgres.pd.read_sql_query') as mock_pd:
-        pg.query_df(query)
-
-        assert pg._conn
-        assert pg.connected is True
-
-        pg.query_df(query)
-
-    assert mock_pd.call_count == 2
-    mock_pd.assert_called_with(query, pg._engine)

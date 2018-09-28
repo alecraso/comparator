@@ -59,20 +59,16 @@ class BigQueryDb(BaseDb):
     def _connect(self):
         if self._bq_creds_file:
             if Path(self._bq_creds_file).exists():
-                os.environ.setdefault(
-                    'GOOGLE_APPLICATION_CREDENTIALS', self._bq_creds_file)
+                os.environ.setdefault('GOOGLE_APPLICATION_CREDENTIALS', self._bq_creds_file)
             else:
-                _log.warning(
-                    'Path set by BIGQUERY_CREDS_FILE does not exist: %s',
-                    self._bq_creds_file)
+                _log.warning('Path set by BIGQUERY_CREDS_FILE does not exist: %s', self._bq_creds_file)
         self._conn = Client(**self._conn_kwargs)
         self._connected = True
 
     def _close(self):
         """
-            This is a no-op because the bigquery Client doesn't
-            have a close method. The BaseDb close method will handle
-            setting self._conn to None and self._connected to False.
+            This is a no-op because the bigquery Client doesn't have a close method.
+            The BaseDb close method will handle setting self._conn to None and self._connected to False.
         """
         return
 
@@ -85,3 +81,18 @@ class BigQueryDb(BaseDb):
     def query(self, query_string):
         result = self._query(query_string)
         return BigQueryResult(result)
+
+    def list_tables(self, dataset_id):
+        """
+            List all tables in the provided dataset
+
+            Args:
+                dataset_id : str - The dataset to query
+
+            Returns:
+                list of table names
+        """
+        if not self._connected:
+            self.connect()
+        dataset_ref = self._conn.dataset(dataset_id)
+        return [t.table_id for t in self._conn.list_tables(dataset_ref)]

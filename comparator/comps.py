@@ -16,7 +16,7 @@ def len_comp(left, right):
 
 
 def first_eq_comp(left, right):
-    return left.first() == right.first()
+    return basic_comp(left.first(), right.first())
 
 
 COMPS = {
