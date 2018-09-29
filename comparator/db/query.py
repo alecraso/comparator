@@ -58,10 +58,10 @@ class QueryResultRow(object):
         return not self == other
 
     def values(self):
-        return self._row.values()
+        return tuple(six.itervalues(self._row))
 
     def keys(self):
-        return self._row.keys()
+        return list(six.iterkeys(self._row))
 
     def items(self):
         for key, value in six.iteritems(self._row):
@@ -84,7 +84,7 @@ class BaseQueryResult(ABC):
 
         if not isinstance(keys, (list, tuple)):
             raise TypeError('keys arg must be a list or tuple')
-        elif not all(keys == list(x.keys()) for x in result):
+        elif not all(sorted(keys) == sorted(list(six.iterkeys(x))) for x in result):
             raise AttributeError('keys arg does not match all result keys')
         self._keys = keys
 
@@ -163,7 +163,7 @@ class BaseQueryResult(ABC):
             Returns:
                 list of tuples - [(value, ... ), ... ]
         """
-        return [tuple([v for v in row.values()]) for row in self._result]
+        return [tuple([v for v in six.itervalues(row)]) for row in self._result]
 
     def df(self, *args, **kwargs):
         """
@@ -225,6 +225,6 @@ class BigQueryResult(BaseQueryResult):
                 % type(row_iterator))
 
         result = [dict(row) for row in row_iterator]
-        keys = list(result[0].keys())
+        keys = list(six.iterkeys(result[0]))
 
         super(BigQueryResult, self).__init__(result, keys)

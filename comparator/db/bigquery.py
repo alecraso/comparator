@@ -3,6 +3,7 @@
 """
 import logging
 import os
+import six
 
 from google.cloud.bigquery import Client
 
@@ -34,8 +35,8 @@ class BigQueryDb(BaseDb):
         self._bq_creds_file = os.getenv('BIGQUERY_CREDS_FILE', None)
         self._conn_kwargs = dict(**BIGQUERY_DEFAULT_CONN_KWARGS)
         self._name = name
-        for k, v in conn_kwargs.items():
-            if k in self._conn_kwargs.keys():
+        for k, v in six.iteritems(conn_kwargs):
+            if k in self._conn_kwargs:
                 self._conn_kwargs[k] = v
 
     def __repr__(self):

@@ -7,8 +7,7 @@ import copy
 import inspect
 import logging
 import re
-
-from past.builtins import basestring
+import six
 
 from comparator.comps import COMPS, DEFAULT_COMP
 from comparator.db.base import BaseDb
@@ -164,7 +163,7 @@ class Comparator(object):
             rquery = lquery
 
         for q in (lquery, rquery):
-            if not isinstance(q, basestring):
+            if not isinstance(q, six.string_types):
                 raise TypeError('Queries must be valid strings')
 
         self._lquery = lquery
@@ -324,8 +323,8 @@ class ComparatorSet(object):
             if (
                     not isinstance(pair, tuple) or
                     len(pair) != 2 or
-                    not isinstance(pair[0], basestring) or
-                    not isinstance(pair[1], basestring)):
+                    not isinstance(pair[0], six.string_types) or
+                    not isinstance(pair[1], six.string_types)):
                 raise InvalidCompSetException(
                     'Each query pair must only be a two-member tuple of strings. Problem at : %r' % pair)
 
@@ -465,7 +464,7 @@ class ComparatorSet(object):
                 all_queries.append((l[0], l[1]))
                 all_comps.append(default_comp or DEFAULT_COMP)
             elif len(l) == 3:
-                if isinstance(l[2], basestring):
+                if isinstance(l[2], six.string_types):
                     if l[2] in COMPS:
                         # Elements are assumed to be queries and comp constant
                         all_names.append(None)

@@ -2,13 +2,14 @@ import abc
 import sys
 
 
-if sys.version_info >= (3, 4):  # pragma: no cover
+if sys.version_info >= (3, 4):
     ABC = abc.ABC
-else:  # pragma: no cover
+else:
     ABC = abc.ABCMeta(str('ABC'), (), {})
+abstractmethod = abc.abstractmethod
 
-try:  # pragma: no cover
+try:
     from pathlib import Path
     Path().expanduser()
-except (ImportError, AttributeError):  # pragma: no cover
+except (ImportError, AttributeError):
     from pathlib2 import Path

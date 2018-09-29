@@ -3,10 +3,9 @@
 """
 from __future__ import unicode_literals
 
-import abc
 import os
 
-from comparator.util import ABC
+from comparator.util import ABC, abstractmethod
 
 
 uname = os.uname()[1]
@@ -30,7 +29,7 @@ class BaseDb(ABC):
     def connected(self):
         return self._connected
 
-    @abc.abstractmethod
+    @abstractmethod
     def _connect(self):
         """
             Connect to the source database
@@ -49,7 +48,7 @@ class BaseDb(ABC):
         if self._conn:
             self._connected = True
 
-    @abc.abstractmethod
+    @abstractmethod
     def _close(self):
         """
             Close any open connection
@@ -64,7 +63,7 @@ class BaseDb(ABC):
         self._conn = None
         self._connected = False
 
-    @abc.abstractmethod
+    @abstractmethod
     def query(self, query_string, **kwargs):
         """
             Runs a query against the source database
