@@ -152,6 +152,14 @@ class Comparator(object):
         return tuple([x.result for x in self._query_results])
 
     @property
+    def lresult(self):
+        return self._query_results[0]
+
+    @property
+    def rresult(self):
+        return self._query_results[1]
+
+    @property
     def results(self):
         return self._results
 
