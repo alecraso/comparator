@@ -8,7 +8,7 @@ import six
 from google.cloud.bigquery import Client
 
 from comparator.db.base import BaseDb
-from comparator.db.query import BigQueryResult
+from comparator.db.query import QueryResult
 from comparator.util import Path
 
 _log = logging.getLogger(__name__)
@@ -81,7 +81,10 @@ class BigQueryDb(BaseDb):
 
     def query(self, query_string):
         result = self._query(query_string)
-        return BigQueryResult(result)
+        return QueryResult(result)
+
+    def execute(self, query_string):
+        self._query(query_string)
 
     def list_tables(self, dataset_id):
         """
@@ -97,3 +100,19 @@ class BigQueryDb(BaseDb):
             self.connect()
         dataset_ref = self._conn.dataset(dataset_id)
         return [t.table_id for t in self._conn.list_tables(dataset_ref)]
+
+    def delete_table(self, dataset_id, table_id):
+        """
+            Delete the given table in the given dataset
+
+            Args:
+                dataset_id : str - The dataset containing the table to delete
+                table_id : str - The table to delete
+
+            Returns:
+                None
+        """
+        if not self._connected:
+            self.connect()
+        table_ref = self._conn.dataset(dataset_id).table(table_id)
+        self._conn.delete_table(table_ref)

@@ -34,16 +34,16 @@ class ComparatorResult(object):
         self._name = str(name)
         self._result = result
 
-    def __bool__(self):
-        return bool(self._result)
-
-    __nonzero__ = __bool__
-
     def __repr__(self):
         return '(%r, %r)' % (self._name, self._result)
 
     def __str__(self):
         return str(self.__repr__())
+
+    def __bool__(self):
+        return bool(self._result)
+
+    __nonzero__ = __bool__
 
     def __getitem__(self, key):
         if isinstance(key, (int, long)):

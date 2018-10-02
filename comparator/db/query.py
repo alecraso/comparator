@@ -10,10 +10,9 @@ import json
 import pandas as pd
 import six
 
+from collections import OrderedDict
 from google.cloud.bigquery.table import RowIterator
 from sqlalchemy.engine import ResultProxy
-
-from comparator.util import ABC
 
 
 class DtDecEncoder(json.JSONEncoder):
@@ -32,6 +31,17 @@ class QueryResultRow(object):
     def __init__(self, keys, row):
         self._keys = keys
         self._row = row
+
+    def __repr__(self):
+        return str(tuple([v for v in self._row.values()]))
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __bool__(self):
+        return bool(self._row)
+
+    __nonzero__ = __bool__
 
     def __getattr__(self, name):
         value = self._row.get(name)
@@ -74,19 +84,35 @@ class QueryResultRow(object):
         return value
 
 
-class BaseQueryResult(ABC):
-    def __init__(self, result, keys):
-        if (
-                not isinstance(result, (list, tuple)) or
-                not all(isinstance(x, dict) for x in result)):
-            raise TypeError('result arg must be a list or tuple of dicts')
-        self._result = result
+class QueryResult(object):
+    def __init__(self, query_iterator):
+        if not isinstance(query_iterator, (RowIterator, ResultProxy)):
+            raise TypeError(
+                'DbQueryResult instantiated with invalid result type : %s. Must be a sqlalchemy.engine.ResultProxy, '
+                'returned by a call to sqlalchemy.engine.Connection.execute(), or a google.cloud.bigquery.table.'
+                'RowIterator, returned by a call to google.cloud.bigquery.Client.query().result()'
+                % type(query_iterator))
 
-        if not isinstance(keys, (list, tuple)):
-            raise TypeError('keys arg must be a list or tuple')
-        elif not all(sorted(keys) == sorted(list(six.iterkeys(x))) for x in result):
-            raise AttributeError('keys arg does not match all result keys')
+        self._result = [OrderedDict(row) for row in query_iterator]
+
+        if self._result:
+            keys = list(six.iterkeys(self._result[0]))
+            if not all(sorted(keys) == sorted(list(six.iterkeys(x))) for x in self._result):
+                raise AttributeError('keys arg does not match all result keys')
+        else:
+            keys = list()
         self._keys = keys
+
+    def __repr__(self):
+        return '%r' % self._result
+
+    def __str__(self):
+        return str(self.__repr__())
+
+    def __bool__(self):
+        return bool(self._result)
+
+    __nonzero__ = __bool__
 
     def __iter__(self):
         self._index = 0
@@ -121,7 +147,7 @@ class BaseQueryResult(ABC):
         return len(self._result)
 
     def __eq__(self, other):
-        if not isinstance(other, BaseQueryResult):
+        if not isinstance(other, QueryResult):
             return NotImplemented
         return self._result == other._result
 
@@ -198,33 +224,3 @@ class BaseQueryResult(ABC):
         if value is None:
             return default
         return value
-
-
-class DbQueryResult(BaseQueryResult):
-    def __init__(self, result_proxy):
-        if not isinstance(result_proxy, ResultProxy):
-            raise TypeError(
-                'DbQueryResult instantiated with invalid result type : %s. '
-                'Must be a sqlalchemy.engine.ResultProxy, returned by a call '
-                'to sqlalchemy.engine.Connection.execute()'
-                % type(result_proxy))
-
-        result = [dict(row) for row in result_proxy]
-        keys = result_proxy.keys()
-
-        super(DbQueryResult, self).__init__(result, keys)
-
-
-class BigQueryResult(BaseQueryResult):
-    def __init__(self, row_iterator):
-        if not isinstance(row_iterator, RowIterator):
-            raise TypeError(
-                'BigQueryResult instantiated with invalid result type : %s. '
-                'Must be a google.cloud.bigquery.table.RowIterator, returned '
-                'by a call to google.cloud.bigquery.Client.query().result()'
-                % type(row_iterator))
-
-        result = [dict(row) for row in row_iterator]
-        keys = list(six.iterkeys(result[0]))
-
-        super(BigQueryResult, self).__init__(result, keys)

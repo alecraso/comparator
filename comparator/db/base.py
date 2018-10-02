@@ -66,7 +66,7 @@ class BaseDb(ABC):
     @abstractmethod
     def query(self, query_string, **kwargs):
         """
-            Runs a query against the source database
+            Runs a query against the source database and returns the results
 
             If not connected, should call self.connect() first
 
@@ -78,5 +78,23 @@ class BaseDb(ABC):
 
             Returns:
                 QueryResult containing the query result
+        """
+        pass
+
+    @abstractmethod
+    def execute(self, query_string, **kwargs):
+        """
+            Runs a query against the source database, intended for DDL, Insert/Update/Delete
+
+            If not connected, should call self.connect() first
+
+            Args:
+                query_string : str - The query to run against the database
+
+            Kwargs:
+                kwargs : Arbitrary parameters to pass to the query engine
+
+            Returns:
+                None
         """
         pass

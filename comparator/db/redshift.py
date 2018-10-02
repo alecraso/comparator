@@ -17,7 +17,7 @@ class RedshiftDb(PostgresDb):
         super(RedshiftDb, self).__init__(
             *args, port=port, conn_params=conn_params, **kwargs)
 
-    def query(self, query_string, **kwargs):
-        result = super(RedshiftDb, self).query(query_string, **kwargs)
+    def _query(self, query_string, **kwargs):
+        result = super(RedshiftDb, self)._query(query_string, **kwargs)
         self.close()  # Close the connection each time since we're using SSL
         return result

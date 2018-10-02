@@ -5,7 +5,7 @@ import six
 import sqlalchemy
 
 from comparator.db.base import BaseDb, DEFAULT_CONN_KWARGS
-from comparator.db.query import DbQueryResult
+from comparator.db.query import QueryResult
 
 
 class PostgresDb(BaseDb):
@@ -52,8 +52,14 @@ class PostgresDb(BaseDb):
     def _close(self):
         self._conn.close()
 
-    def query(self, query_string, **kwargs):
+    def _query(self, query_string, **kwargs):
         if not self._connected:
             self.connect()
-        result = self._conn.execute(query_string, **kwargs)
-        return DbQueryResult(result)
+        return self._conn.execute(query_string, **kwargs)
+
+    def query(self, query_string, **kwargs):
+        result = self._query(query_string, **kwargs)
+        return QueryResult(result)
+
+    def execute(self, query_string, **kwargs):
+        self._query(query_string, **kwargs)
