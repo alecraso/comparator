@@ -2,10 +2,12 @@ import mock
 import pytest
 import types
 
+from sqlalchemy.engine import ResultProxy
+
 from comparator import comps
 from comparator import Comparator
 from comparator.db import PostgresDb
-from comparator.db.query import BaseQueryResult
+from comparator.db.query import QueryResult
 from comparator.models import ComparatorResult
 
 query = 'select * from nowhere'
@@ -13,11 +15,17 @@ other_query = 'select count(*) from somewhere'
 left_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}]
 right_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}]
 mismatch_right_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}, {'a': 7, 'b': 8, 'c': 9}]
-keys = ['a', 'b', 'c']
 
-left_results = BaseQueryResult(left_query_results, keys)
-right_results = BaseQueryResult(right_query_results, keys)
-mismatch_right_results = BaseQueryResult(mismatch_right_query_results, keys)
+
+def get_mock_query_result(values):
+    mock_result = mock.MagicMock(spec=ResultProxy)
+    mock_result.__iter__.return_value = values
+    return QueryResult(mock_result)
+
+
+left_results = get_mock_query_result(left_query_results)
+right_results = get_mock_query_result(right_query_results)
+mismatch_right_results = get_mock_query_result(mismatch_right_query_results)
 
 expected_default_result = ('basic_comp', True)
 expected_multiple_result = [
