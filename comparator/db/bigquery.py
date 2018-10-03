@@ -27,6 +27,7 @@ class BigQueryDb(BaseDb):
 
         Kwargs:
             name : str - The canonical name to use for this instance
+            creds_file : str - The filepath of the desired GOOGLE_APPLICATION_CREDENTIALS file
             conn_kwargs : Use in place of a query string to set individual
                           attributes of the connection defaults (project, etc)
     """
