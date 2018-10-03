@@ -1,10 +1,10 @@
 from io import open
 from setuptools import setup, find_packages
 
-with open('README.md', encoding='utf-8') as f:
+with open('docs/README.rst', encoding='utf-8') as f:
     readme = f.read()
 
-with open('CHANGES.md', encoding='utf-8') as f:
+with open('docs/CHANGES.rst', encoding='utf-8') as f:
     changes = f.read()
 
 
@@ -14,8 +14,7 @@ setup(
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
-    long_description=readme + '\n\n' + changes,
-    long_description_content_type='text/markdown',
+    long_description=readme + '\n' + changes,
     license='Apache 2.0',
     keywords='utility compare database',
     url='https://github.com/aaronbiller/comparator',
