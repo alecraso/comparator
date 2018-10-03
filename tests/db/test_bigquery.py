@@ -159,6 +159,28 @@ def test_connection_with_bad_env():
     assert bq._conn.creds_var is None
 
 
+def test_connection_with_passed():
+    try:
+        del os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+    except KeyError:
+        pass
+
+    bq = BigQueryDb(creds_file=test_creds_path)
+    assert bq._bq_creds_file == test_creds_path
+    assert bq._conn_kwargs == BIGQUERY_DEFAULT_CONN_KWARGS
+
+    assert bq._conn is None
+    assert bq.connected is False
+
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        bq.connect()
+        bq._conn.set_creds_var()
+
+    assert bq._conn
+    assert bq.connected is True
+    assert bq._conn.creds_var == test_creds_path
+
+
 def test_query_without_connection():
     bq = BigQueryDb()
 

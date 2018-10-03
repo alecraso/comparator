@@ -31,9 +31,13 @@ class BigQueryDb(BaseDb):
                           attributes of the connection defaults (project, etc)
     """
 
-    def __init__(self, name=None, **conn_kwargs):
-        self._bq_creds_file = os.getenv('BIGQUERY_CREDS_FILE', None)
+    def __init__(self, name=None, creds_file=None, **conn_kwargs):
+        if creds_file is None:
+            creds_file = os.getenv('BIGQUERY_CREDS_FILE', None)
+        self._bq_creds_file = creds_file
+
         self._conn_kwargs = dict(**BIGQUERY_DEFAULT_CONN_KWARGS)
+
         self._name = name
         for k, v in six.iteritems(conn_kwargs):
             if k in self._conn_kwargs:
@@ -58,11 +62,11 @@ class BigQueryDb(BaseDb):
         self._conn_kwargs['project'] = value
 
     def _connect(self):
-        if self._bq_creds_file:
+        if self._bq_creds_file is not None:
             if Path(self._bq_creds_file).exists():
                 os.environ.setdefault('GOOGLE_APPLICATION_CREDENTIALS', self._bq_creds_file)
             else:
-                _log.warning('Path set by BIGQUERY_CREDS_FILE does not exist: %s', self._bq_creds_file)
+                _log.warning('Path set by creds file does not exist: %s', self._bq_creds_file)
         self._conn = Client(**self._conn_kwargs)
         self._connected = True
 

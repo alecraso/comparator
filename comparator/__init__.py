@@ -9,4 +9,4 @@ from comparator.models import Comparator, ComparatorSet
 
 
 __all__ = [db, BASIC_COMP, LEN_COMP, FIRST_COMP, DEFAULT_COMP, DbConfig, Comparator, ComparatorSet]
-__version__ = '0.3.0'
+__version__ = '0.3.1'
