@@ -1,10 +1,10 @@
 from io import open
 from setuptools import setup, find_packages
 
-with open('docs/README.rst', encoding='utf-8') as f:
+with open('README.rst', encoding='utf-8') as f:
     readme = f.read()
 
-with open('docs/CHANGES.rst', encoding='utf-8') as f:
+with open('CHANGES.rst', encoding='utf-8') as f:
     changes = f.read()
 
 
