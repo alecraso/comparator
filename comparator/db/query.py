@@ -33,7 +33,7 @@ class QueryResultRow(object):
         self._row = row
 
     def __repr__(self):
-        return str(tuple([v for v in self._row.values()]))
+        return str(tuple([v for v in self.values()]))
 
     def __str__(self):
         return self.__repr__()
