@@ -5,16 +5,17 @@ import mock
 import pandas as pd
 import pytest
 
+from collections import OrderedDict
 from google.cloud.bigquery.table import RowIterator
 from sqlalchemy.engine import ResultProxy
 
 from comparator.db.query import QueryResult, QueryResultRow, DtDecEncoder
 
-results = [{'a': 1, 'b': decimal.Decimal(2.0), 'c': datetime.date(2018, 8, 1)},
-           {'a': 4, 'b': decimal.Decimal(5.0), 'c': datetime.date(2018, 9, 1)},
-           {'a': 7, 'b': decimal.Decimal(8.0), 'c': datetime.datetime(2018, 10, 1)}]
-malformed_results = [{'a': 1, 'b': 2},
-                     {'a': 3, 'c': 4}]
+results = [OrderedDict([('a', 1), ('b', decimal.Decimal(2.0)), ('c', datetime.date(2018, 8, 1))]),
+           OrderedDict([('a', 4), ('b', decimal.Decimal(5.0)), ('c', datetime.date(2018, 9, 1))]),
+           OrderedDict([('a', 7), ('b', decimal.Decimal(8.0)), ('c', datetime.datetime(2018, 10, 1))])]
+malformed_results = [OrderedDict([('a', 1), ('b', 2)]),
+                     OrderedDict([('a', 3), ('c', 4)])]
 
 
 def get_mock_iterator(spec, values):
@@ -55,10 +56,7 @@ def test_queryresult():
     expected_list = [(1, decimal.Decimal('2'), datetime.date(2018, 8, 1)),
                      (4, decimal.Decimal('5'), datetime.date(2018, 9, 1)),
                      (7, decimal.Decimal('8'), datetime.datetime(2018, 10, 1, 0, 0))]
-    expected_json = (
-        '[{"a": 1, "b": 2.0, "c": "2018-08-01"}, '
-        '{"a": 4, "b": 5.0, "c": "2018-09-01"}, '
-        '{"a": 7, "b": 8.0, "c": "2018-10-01T00:00:00"}]')
+    expected_json = json.dumps(results, cls=DtDecEncoder)
     expected_df = pd.DataFrame(results)
     expected_str = (
         "[OrderedDict([('a', 1), ('b', Decimal('2')), ('c', datetime.date(2018, 8, 1))]), "
@@ -121,9 +119,9 @@ def test_dtdecencoder():
         '[{"a": 1, "b": 2.0, "c": "2018-08-01"}, '
         '{"a": 4, "b": 5.0, "c": "2018-09-01"}, '
         '{"a": 7, "b": 8.0, "c": "2018-10-01T00:00:00"}]')
-    data = json.dumps(results, cls=DtDecEncoder)
+    data = json.dumps(results, cls=DtDecEncoder, sort_keys=True)
     assert data == expected_json
 
     bad_json = {'a': 7, 'b': decimal.Decimal(8.0), 'c': datetime.datetime(2018, 10, 1), 'd': get_mock_iterator}
     with pytest.raises(TypeError):
-        json.dumps(bad_json, cls=DtDecEncoder)
+        json.dumps(bad_json, cls=DtDecEncoder, sort_keys=True)
