@@ -3,14 +3,9 @@
 """
 from __future__ import unicode_literals
 
-import abc
 import os
-import sys
 
-if sys.version_info >= (3, 4):  # pragma: no cover
-    ABC = abc.ABC
-else:  # pragma: no cover
-    ABC = abc.ABCMeta(str('ABC'), (), {})
+from comparator.util import ABC, abstractmethod
 
 
 uname = os.uname()[1]
@@ -34,7 +29,7 @@ class BaseDb(ABC):
     def connected(self):
         return self._connected
 
-    @abc.abstractmethod
+    @abstractmethod
     def _connect(self):
         """
             Connect to the source database
@@ -53,7 +48,7 @@ class BaseDb(ABC):
         if self._conn:
             self._connected = True
 
-    @abc.abstractmethod
+    @abstractmethod
     def _close(self):
         """
             Close any open connection
@@ -68,10 +63,10 @@ class BaseDb(ABC):
         self._conn = None
         self._connected = False
 
-    @abc.abstractmethod
+    @abstractmethod
     def query(self, query_string, **kwargs):
         """
-            Runs a query against the source database
+            Runs a query against the source database and returns the results
 
             If not connected, should call self.connect() first
 
@@ -82,15 +77,14 @@ class BaseDb(ABC):
                 kwargs : Arbitrary parameters to pass to the query engine
 
             Returns:
-                list of tuples - The records returned from the database
+                QueryResult containing the query result
         """
         pass
 
-    @abc.abstractmethod
-    def query_df(self, query_string, **kwargs):
+    @abstractmethod
+    def execute(self, query_string, **kwargs):
         """
-            Runs a query against the source database and
-            returns a pandas DataFrame
+            Runs a query against the source database, intended for DDL, Insert/Update/Delete
 
             If not connected, should call self.connect() first
 
@@ -101,6 +95,6 @@ class BaseDb(ABC):
                 kwargs : Arbitrary parameters to pass to the query engine
 
             Returns:
-                pandas DataFrame
+                None
         """
         pass

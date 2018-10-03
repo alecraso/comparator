@@ -1,12 +1,11 @@
 """
     Class for using Postgres as a source database
 """
-import pandas as pd
+import six
 import sqlalchemy
 
-from past.builtins import basestring
-
 from comparator.db.base import BaseDb, DEFAULT_CONN_KWARGS
+from comparator.db.query import QueryResult
 
 
 class PostgresDb(BaseDb):
@@ -24,22 +23,20 @@ class PostgresDb(BaseDb):
     """
     _db_type = 'postgresql'
 
-    def __init__(
-            self,
-            name=None, conn_string=None, conn_params={}, **conn_kwargs):
+    def __init__(self, name=None, conn_string=None, conn_params={}, **conn_kwargs):
         self._name = name
 
         if conn_string is not None:
-            if not isinstance(conn_string, basestring):
+            if not isinstance(conn_string, six.string_types):
                 raise ValueError('conn_string kwarg must be a valid string')
-            self._engine = sqlalchemy.create_engine(conn_string, **conn_params)
+            self._engine = sqlalchemy.create_engine(conn_string, connect_args=conn_params)
         else:
             self._conn_kwargs = dict(**DEFAULT_CONN_KWARGS)
-            for k, v in conn_kwargs.items():
-                if k in self._conn_kwargs.keys():
+            for k, v in six.iteritems(conn_kwargs):
+                if k in self._conn_kwargs:
                     self._conn_kwargs[k] = v
             url = sqlalchemy.engine.url.URL(self._db_type, **self._conn_kwargs)
-            self._engine = sqlalchemy.create_engine(url, **conn_params)
+            self._engine = sqlalchemy.create_engine(url, connect_args=conn_params)
 
     def __repr__(self):
         return '%s -- %r' % (self.__class__, self._engine.url)
@@ -55,13 +52,14 @@ class PostgresDb(BaseDb):
     def _close(self):
         self._conn.close()
 
-    def query(self, query_string, **kwargs):
+    def _query(self, query_string, **kwargs):
         if not self._connected:
             self.connect()
-        result = self._conn.execute(query_string, **kwargs)
-        return result.fetchall()
+        return self._conn.execute(query_string, **kwargs)
 
-    def query_df(self, query_string, **kwargs):
-        if not self._connected:
-            self.connect()
-        return pd.read_sql_query(query_string, self._engine, **kwargs)
+    def query(self, query_string, **kwargs):
+        result = self._query(query_string, **kwargs)
+        return QueryResult(result)
+
+    def execute(self, query_string, **kwargs):
+        self._query(query_string, **kwargs)

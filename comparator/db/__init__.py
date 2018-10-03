@@ -1,6 +1,5 @@
-from comparator.db.base import BaseDb  # noqa
-from comparator.db.bigquery import BigQueryDb  # noqa
-from comparator.db.postgres import PostgresDb  # noqa
-from comparator.db.redshift import RedshiftDb  # noqa
+from comparator.db.bigquery import BigQueryDb
+from comparator.db.postgres import PostgresDb
+from comparator.db.redshift import RedshiftDb
 
-__all__ = []
+__all__ = [BigQueryDb, PostgresDb, RedshiftDb]

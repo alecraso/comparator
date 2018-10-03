@@ -5,11 +5,11 @@ import comparator.db
 
 def test_abc():
     with pytest.raises(TypeError):
-        comparator.db.BaseDb()
+        comparator.db.base.BaseDb()
 
 
 def test_base_db():
-    db = comparator.db.BaseDb
+    db = comparator.db.base.BaseDb
     db.__abstractmethods__ = set()
     db = db()
 
@@ -32,10 +32,8 @@ def test_base_db():
 
     with pytest.raises(TypeError):
         db.query()
-
     db.query('select * from nowhere')
 
     with pytest.raises(TypeError):
-        db.query_df()
-
-    db.query_df('select * from nowhere')
+        db.execute()
+    db.execute("insert into nowhere select 'nothing'")

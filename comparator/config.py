@@ -6,11 +6,7 @@ import os
 import re
 import yaml
 
-try:  # pragma: no cover
-    from pathlib import Path
-    Path().expanduser()
-except (ImportError, AttributeError):  # pragma: no cover
-    from pathlib2 import Path
+from comparator.util import Path
 
 _log = logging.getLogger(__name__)
 
@@ -22,9 +18,8 @@ class DbConfig(object):
     """
         A class holding database configurations
 
-        Configurations are loaded from a yaml file containing
-        the connection details for each database. The file shuld be
-        organized in the following way:
+        Configurations are loaded from a yaml file containing the connection details for each database.
+        The file shuld be organized in the following way:
 
         - name: "default"
           username: "postgres"
@@ -49,6 +44,7 @@ class DbConfig(object):
             config_file : str - The path of the config file to load
 
         TODO(aaronbiller): allow config to create config file and write to it
+        TODO(aaronbiller): allow instantiation of BaseDb right from the config
     """
     _config = None
     _dbs = list()
@@ -71,6 +67,7 @@ class DbConfig(object):
         if self._config is None:
             raise AttributeError('Could not find valid configuration file')
         else:
+            _log.info('Found configuration file at %s', self._config.as_posix())
             self._load_dbs()
 
     def __repr__(self):
@@ -90,15 +87,11 @@ class DbConfig(object):
         try:
             config = Path(config_file)
         except TypeError:
-            _log.warning(
-                'Invalid path type provided, falling back : %r',
-                config_file.__class__)
+            _log.warning('Invalid path type provided, falling back : %r', config_file.__class__)
         else:
             config = config.expanduser().resolve()
             if not config.exists():
-                _log.warning(
-                    'Provided path does not exist, falling back : %s',
-                    config_file)
+                _log.warning('Provided path does not exist, falling back : %s', config_file)
             else:
                 self._config = config
 
@@ -109,8 +102,7 @@ class DbConfig(object):
             msg = 'Error parsing config file as yaml'
             if hasattr(exc, 'problem_mark'):  # pragma: no cover
                 mark = exc.problem_mark
-                msg += ' at line {}, column {}'.format(
-                    mark.line, mark.column + 1)
+                msg += ' at line {}, column {}'.format(mark.line, mark.column + 1)
             _log.warning(msg + ' : %s', self._config)
             return
 

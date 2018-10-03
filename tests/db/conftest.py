@@ -1,14 +1,8 @@
+import mock
 import pytest
 
 from google.cloud.bigquery.table import Row
-
-
-class mock_result:
-    def __init__(self, sql):
-        self.sql = sql
-
-    def fetchall(self):
-        return [self.sql]
+from sqlalchemy.engine import ResultProxy
 
 
 class mock_engine:
@@ -22,7 +16,12 @@ class mock_engine:
         pass
 
     def execute(self, sql, **kwargs):
-        return mock_result(sql)
+        result = mock.MagicMock(spec=ResultProxy)
+        result.__iter__.return_value = [{'first': 'a', 'second': 'b', 'third': 'c'},
+                                        {'first': 'd', 'second': 'e', 'third': 'f'},
+                                        {'first': 'g', 'second': 'h', 'third': 'i'}]
+        result.keys.return_value = ['first', 'second', 'third']
+        return result
 
 
 @pytest.fixture(scope='module')

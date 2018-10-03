@@ -3,17 +3,13 @@
 """
 import logging
 import os
-import pandas as pd
-
-try:  # pragma: no cover
-    from pathlib import Path
-    Path().expanduser()
-except (ImportError, AttributeError):  # pragma: no cover
-    from pathlib2 import Path
+import six
 
 from google.cloud.bigquery import Client
 
 from comparator.db.base import BaseDb
+from comparator.db.query import QueryResult
+from comparator.util import Path
 
 _log = logging.getLogger(__name__)
 
@@ -39,8 +35,8 @@ class BigQueryDb(BaseDb):
         self._bq_creds_file = os.getenv('BIGQUERY_CREDS_FILE', None)
         self._conn_kwargs = dict(**BIGQUERY_DEFAULT_CONN_KWARGS)
         self._name = name
-        for k, v in conn_kwargs.items():
-            if k in self._conn_kwargs.keys():
+        for k, v in six.iteritems(conn_kwargs):
+            if k in self._conn_kwargs:
                 self._conn_kwargs[k] = v
 
     def __repr__(self):
@@ -64,20 +60,16 @@ class BigQueryDb(BaseDb):
     def _connect(self):
         if self._bq_creds_file:
             if Path(self._bq_creds_file).exists():
-                os.environ.setdefault(
-                    'GOOGLE_APPLICATION_CREDENTIALS', self._bq_creds_file)
+                os.environ.setdefault('GOOGLE_APPLICATION_CREDENTIALS', self._bq_creds_file)
             else:
-                _log.warning(
-                    'Path set by BIGQUERY_CREDS_FILE does not exist: %s',
-                    self._bq_creds_file)
+                _log.warning('Path set by BIGQUERY_CREDS_FILE does not exist: %s', self._bq_creds_file)
         self._conn = Client(**self._conn_kwargs)
         self._connected = True
 
     def _close(self):
         """
-            This is a no-op because the bigquery Client doesn't
-            have a close method. The BaseDb close method will handle
-            setting self._conn to None and self._connected to False.
+            This is a no-op because the bigquery Client doesn't have a close method.
+            The BaseDb close method will handle setting self._conn to None and self._connected to False.
         """
         return
 
@@ -88,15 +80,39 @@ class BigQueryDb(BaseDb):
         return query_job.result()
 
     def query(self, query_string):
-        results = self._query(query_string)
-        return [
-            tuple([col for col in row])
-            for row in results]
+        result = self._query(query_string)
+        return QueryResult(result)
 
-    def query_df(self, query_string):
-        results = self._query(query_string)
+    def execute(self, query_string):
+        self._query(query_string)
 
-        columns = list(results[0].keys())
-        data = [list(x.values()) for x in results]
+    def list_tables(self, dataset_id):
+        """
+            List all tables in the provided dataset
 
-        return pd.DataFrame(data=data, columns=columns)
+            Args:
+                dataset_id : str - The dataset to query
+
+            Returns:
+                list of table names
+        """
+        if not self._connected:
+            self.connect()
+        dataset_ref = self._conn.dataset(dataset_id)
+        return [t.table_id for t in self._conn.list_tables(dataset_ref)]
+
+    def delete_table(self, dataset_id, table_id):
+        """
+            Delete the given table in the given dataset
+
+            Args:
+                dataset_id : str - The dataset containing the table to delete
+                table_id : str - The table to delete
+
+            Returns:
+                None
+        """
+        if not self._connected:
+            self.connect()
+        table_ref = self._conn.dataset(dataset_id).table(table_id)
+        self._conn.delete_table(table_ref)

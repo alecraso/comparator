@@ -1,14 +1,11 @@
 import mock
 import os
 
-try:
-    from pathlib import Path
-    Path().expanduser()
-except (ImportError, AttributeError):
-    from pathlib2 import Path
+from google.cloud.bigquery.table import Row, RowIterator
 
-from comparator.db import BaseDb, BigQueryDb
-from comparator.db.bigquery import BIGQUERY_DEFAULT_CONN_KWARGS
+from comparator.db.base import BaseDb
+from comparator.db.bigquery import BigQueryDb, BIGQUERY_DEFAULT_CONN_KWARGS
+from comparator.util import Path
 
 uname = os.uname()[1]
 project = 'my-project'
@@ -16,6 +13,18 @@ expected_conn_kwargs = {'project': 'my-project', 'credentials': None, 'location'
 query = 'select * from nowhere'
 test_creds_path = Path.cwd().as_posix() + '/tests/configs/bq_creds.json'
 test_creds_not_exist_path = Path.cwd().as_posix() + '/tests/configs/bq_creds_nope.json'
+expected_query_results = [{'first': 'a', 'second': 'b', 'third': 'c'},
+                          {'first': 'd', 'second': 'e', 'third': 'f'},
+                          {'first': 'g', 'second': 'h', 'third': 'i'}]
+
+
+class MockBigQueryTable(object):
+    def __init__(self, dataset):
+        self.dataset = dataset
+
+    @property
+    def table_id(self):
+        return '{}.table'.format(self.dataset)
 
 
 class MockBigQueryClient(object):
@@ -27,11 +36,31 @@ class MockBigQueryClient(object):
         self.creds_var = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', None)
 
     def query(self, sql, **kwargs):
-        self.query = query
+        self._query = query
         return self
 
     def result(self):
-        return [[self.query]]
+        result = mock.MagicMock(spec=RowIterator)
+        result.__iter__.return_value = [
+            Row(['a', 'b', 'c'], {'first': 0, 'second': 1, 'third': 2}),
+            Row(['d', 'e', 'f'], {'first': 0, 'second': 1, 'third': 2}),
+            Row(['g', 'h', 'i'], {'first': 0, 'second': 1, 'third': 2}),
+        ]
+        return result
+
+    def dataset(self, dataset):
+        self._dataset = dataset
+        return self
+
+    def list_tables(self, mbqc):
+        return [MockBigQueryTable(mbqc._dataset) for i in range(3)]
+
+    def table(self, table_id):
+        self._table = table_id
+        return table_id
+
+    def delete_table(self, table_id):
+        return None
 
 
 def test_bigquery():
@@ -81,7 +110,7 @@ def test_connection():
     assert bq._conn.project == project
 
     results = bq.query(query)
-    assert results == [(query,)]
+    assert results.result == expected_query_results
 
     bq.close()
     assert not bq._conn
@@ -139,14 +168,46 @@ def test_query_without_connection():
     assert bq.connected is True
 
 
-def test_df(mock_bq_query_result):
+def test_query_vs_execute():
     bq = BigQueryDb()
 
-    with mock.patch.object(bq, '_query', return_value=mock_bq_query_result):
-        df = bq.query_df(query)
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        res = bq.query(query)
+    assert res is not None
 
-    assert len(df) == 3
-    for i, col in enumerate(df.columns):
-        assert list(mock_bq_query_result[0].keys())[i] == col
-    for i, row in enumerate(df.itertuples(index=False)):
-        assert list(mock_bq_query_result[i].values()) == list(row)
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        res = bq.execute(query)
+    assert res is None
+
+
+def test_list_tables():
+    bq = BigQueryDb()
+
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        bq.connect()
+    tables = bq.list_tables('my_dataset')
+    assert tables == ['my_dataset.table'] * 3
+
+    bq1 = BigQueryDb()
+
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        tables1 = bq1.list_tables('my_dataset')
+    assert tables1 == ['my_dataset.table'] * 3
+    assert bq1.connected is True
+
+
+def test_delete_table():
+    bq = BigQueryDb()
+
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        bq.connect()
+    res = bq.delete_table('my_dataset', 'my_table')
+    assert res is None
+    assert bq._conn._dataset == 'my_dataset'
+    assert bq._conn._table == 'my_table'
+
+    bq1 = BigQueryDb()
+
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        bq1.delete_table('my_dataset', 'my_table')
+    assert bq1.connected is True
