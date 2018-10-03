@@ -87,7 +87,7 @@ c.run_comparisons()
 The results of both queries and comparisons can be checked using standard operators, as well as for "truthiness" (ex: `failures = [result.name for result in c.compare() if result is False]`).
 
 Comparisons do not always need to return a boolean. Accessing the resulting value of such a comparison is simple.
-```py
+```python
 def len_diff(left, right):
     return len(left) - len(right)
 
@@ -103,7 +103,7 @@ else:
 ```
 
 Query results are contained in the `QueryResult` class, which provides simple yet powerful ways to look up and access the output of the query. Data can be retrieved as a dict, list, json string, or pandas DataFrame. Rows/columns can be accesed by index, attribute, or key. Iterating on the `QueryResult` returns a `QueryResultRow`, which has the same lookup functionality, as well as standard operators (<, >, =, etc).
-```py
+```python
 pg = cpt.db.PostgresDb(**conf.default)
 res = pg.query(query_string)
 
