@@ -44,19 +44,20 @@ class QueryResultRow(object):
     __nonzero__ = __bool__
 
     def __getattr__(self, name):
-        value = self._row.get(name)
-        if value is None:
-            raise AttributeError('Not found : %r' % name)
-        return value
+        return self.__getitem__(str(name))
 
     def __getitem__(self, key):
         if isinstance(key, six.string_types):
+            # Return the column corresponding with this key
             if key not in self._keys:
                 raise KeyError('Not found : %r' % key)
             value = self._row[key]
-        elif isinstance(key, int):
+        elif isinstance(key, six.integer_types):
+            # Return the column corresponding with this index
             k = self._keys[key]
             value = self._row[k]
+        else:
+            raise TypeError('Lookups must be done with integers or strings, not %s' % type(key))
         return value
 
     def __eq__(self, other):
@@ -129,18 +130,20 @@ class QueryResult(object):
     next = __next__
 
     def __getattr__(self, name):
-        if name not in self._keys:
-            raise AttributeError('Not found : %r' % name)
-        return self.dict()[name]
+        return self.__getitem__(str(name))
 
     def __getitem__(self, key):
         if isinstance(key, six.string_types):
+            # Return the column corresponding with this key
             if key not in self._keys:
                 raise KeyError('Not found : %r' % key)
             value = self.dict()[key]
-        elif isinstance(key, int):
-            k = self._keys[key]
-            value = self.dict()[k]
+        elif isinstance(key, six.integer_types):
+            # Return the row corresponding with this index
+            row = self._result[key]
+            value = QueryResultRow(self._keys, row)
+        else:
+            raise TypeError('Lookups must be done with integers or strings, not %s' % type(key))
         return value
 
     def __len__(self):
@@ -220,7 +223,8 @@ class QueryResult(object):
             yield (key, value)
 
     def get(self, key, default=None):
-        value = self.dict().get(key)
-        if value is None:
+        try:
+            value = self.__getitem__(str(key))
+        except KeyError:
             return default
         return value

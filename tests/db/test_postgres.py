@@ -72,3 +72,14 @@ def test_query_without_connection(mock_create_engine):
     pg.query(query)
     assert pg._conn
     assert pg.connected is True
+
+
+def test_query_vs_execute(mock_create_engine):
+    with mock.patch('comparator.db.postgres.sqlalchemy.create_engine', mock_create_engine):
+        pg = PostgresDb()
+
+    res = pg.query(query)
+    assert res is not None
+
+    res = pg.execute(query)
+    assert res is None

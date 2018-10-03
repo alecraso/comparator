@@ -32,5 +32,8 @@ def test_base_db():
 
     with pytest.raises(TypeError):
         db.query()
-
     db.query('select * from nowhere')
+
+    with pytest.raises(TypeError):
+        db.execute()
+    db.execute("insert into nowhere select 'nothing'")

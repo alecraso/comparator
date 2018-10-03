@@ -36,7 +36,7 @@ class MockBigQueryClient(object):
         self.creds_var = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', None)
 
     def query(self, sql, **kwargs):
-        self.query = query
+        self._query = query
         return self
 
     def result(self):
@@ -49,10 +49,18 @@ class MockBigQueryClient(object):
         return result
 
     def dataset(self, dataset):
-        return dataset
+        self._dataset = dataset
+        return self
 
-    def list_tables(self, dataset):
-        return [MockBigQueryTable(dataset) for i in range(3)]
+    def list_tables(self, mbqc):
+        return [MockBigQueryTable(mbqc._dataset) for i in range(3)]
+
+    def table(self, table_id):
+        self._table = table_id
+        return table_id
+
+    def delete_table(self, table_id):
+        return None
 
 
 def test_bigquery():
@@ -160,6 +168,18 @@ def test_query_without_connection():
     assert bq.connected is True
 
 
+def test_query_vs_execute():
+    bq = BigQueryDb()
+
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        res = bq.query(query)
+    assert res is not None
+
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        res = bq.execute(query)
+    assert res is None
+
+
 def test_list_tables():
     bq = BigQueryDb()
 
@@ -173,4 +193,21 @@ def test_list_tables():
     with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
         tables1 = bq1.list_tables('my_dataset')
     assert tables1 == ['my_dataset.table'] * 3
-    assert bq.connected is True
+    assert bq1.connected is True
+
+
+def test_delete_table():
+    bq = BigQueryDb()
+
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        bq.connect()
+    res = bq.delete_table('my_dataset', 'my_table')
+    assert res is None
+    assert bq._conn._dataset == 'my_dataset'
+    assert bq._conn._table == 'my_table'
+
+    bq1 = BigQueryDb()
+
+    with mock.patch('comparator.db.bigquery.Client', MockBigQueryClient):
+        bq1.delete_table('my_dataset', 'my_table')
+    assert bq1.connected is True

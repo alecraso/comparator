@@ -46,7 +46,7 @@ class ComparatorResult(object):
     __nonzero__ = __bool__
 
     def __getitem__(self, key):
-        if isinstance(key, (int, long)):
+        if isinstance(key, six.integer_types):
             key = {0: 'name', 1: 'result'}.get(key, None)
             if key is None:
                 raise IndexError('list index out of range')
@@ -141,7 +141,7 @@ class Comparator(object):
         self._set_empty()
 
     def __repr__(self):
-        return '%s : %s | %s' % (self._name)
+        return '%s : %s | %s' % (self._name, self._left, self._right)
 
     @property
     def name(self):
@@ -235,7 +235,7 @@ class Comparator(object):
                 # Try to surface a more useful name if lambda is used
                 if name == '<lambda>':
                     source = inspect.getsource(comp)
-                    name = 'lambda' + re.split('lambda', source)[1].trim()
+                    name = 'lambda' + re.split('lambda', source)[1].strip()
 
                 result = ComparatorResult(
                     self._name, name, comp(*self._query_results))
@@ -342,7 +342,7 @@ class ComparatorSet(object):
         if comps is None:
             default = default_comp or DEFAULT_COMP
             # Use the default comparison for each query pair
-            comps = [[default] for i in xrange(len(self._queries))]
+            comps = [default for i in range(len(self._queries))]
         if not isinstance(comps, list):
             comps = [comps]
 
@@ -361,7 +361,7 @@ class ComparatorSet(object):
 
     def _set_names(self, names):
         if names is None:
-            names = [None for i in xrange(len(self._queries))]
+            names = [None for i in range(len(self._queries))]
         if not isinstance(names, list):
             names = [names]
 
@@ -465,7 +465,7 @@ class ComparatorSet(object):
         all_queries = []
         all_comps = []
 
-        for l in list_or_lists:
+        for i, l in enumerate(list_or_lists):
             if len(l) == 2:
                 # Elements are assumed to be queries only
                 all_names.append(None)
@@ -495,6 +495,6 @@ class ComparatorSet(object):
                 all_comps.append(l[3])
             else:
                 raise InvalidCompSetException(
-                    'Too many or too few elements passed to properly build a comparison. Problem with : %r' % l)
+                    'Too many or too few elements passed to properly build a comparison. Problem with set %d' % i)
 
         return cls(left, right, all_queries, all_comps, all_names)
