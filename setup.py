@@ -10,7 +10,7 @@ with open('CHANGES.rst', encoding='utf-8') as f:
 
 setup(
     name='comparator',
-    version='0.3.1',
+    version='0.3.2',
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
