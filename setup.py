@@ -31,7 +31,7 @@ setup(
         'PyYAML',
         'SQLAlchemy==1.2.11',
         'sqlalchemy-redshift==0.7.1',
-        'pandas==0.23.4',
+        'pandas>=0.22.0',
         'pytest-runner==4.2',
     ],
     extras_require={
