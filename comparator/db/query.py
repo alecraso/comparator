@@ -228,3 +228,6 @@ class QueryResult(object):
         except KeyError:
             return default
         return value
+
+    def pop(self, index=-1):
+        return QueryResultRow(self._keys, self._result.pop(index))
