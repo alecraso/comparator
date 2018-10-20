@@ -86,15 +86,18 @@ class QueryResultRow(object):
 
 
 class QueryResult(object):
-    def __init__(self, query_iterator):
-        if not isinstance(query_iterator, (RowIterator, ResultProxy)):
-            raise TypeError(
-                'DbQueryResult instantiated with invalid result type : %s. Must be a sqlalchemy.engine.ResultProxy, '
-                'returned by a call to sqlalchemy.engine.Connection.execute(), or a google.cloud.bigquery.table.'
-                'RowIterator, returned by a call to google.cloud.bigquery.Client.query().result()'
-                % type(query_iterator))
+    def __init__(self, query_iterator=None):
+        if query_iterator is not None:
+            if not isinstance(query_iterator, (RowIterator, ResultProxy)):
+                raise TypeError(
+                    'DbQueryResult instantiated with invalid result type : %s. Must be a sqlalchemy.engine.ResultProxy,'
+                    ' returned by a call to sqlalchemy.engine.Connection.execute(), or a google.cloud.bigquery.table.'
+                    'RowIterator, returned by a call to google.cloud.bigquery.Client.query().result()'
+                    % type(query_iterator))
 
-        self._result = [OrderedDict(row) for row in query_iterator]
+            self._result = [OrderedDict(row) for row in query_iterator]
+        else:
+            self._result = list()
 
         if self._result:
             keys = list(six.iterkeys(self._result[0]))
@@ -134,6 +137,10 @@ class QueryResult(object):
 
     def __getitem__(self, key):
         if isinstance(key, six.string_types):
+            # Check if key is 'keys', in which case return the result keys
+            # Using this to allow the keys() method to be a generator
+            if key == 'keys':
+                return copy.deepcopy(self._keys)
             # Return the column corresponding with this key
             if key not in self._keys:
                 raise KeyError('Not found : %r' % key)
@@ -142,6 +149,10 @@ class QueryResult(object):
             # Return the row corresponding with this index
             row = self._result[key]
             value = QueryResultRow(self._keys, row)
+        elif isinstance(key, slice):
+            # Return the rows corresponding with this slice
+            sliced = [self._result[ii] for ii in range(*key.indices(len(self._result)))]
+            value = self._from_part(self._keys, sliced)
         else:
             raise TypeError('Lookups must be done with integers or strings, not %s' % type(key))
         return value
@@ -156,6 +167,29 @@ class QueryResult(object):
 
     def __ne__(self, other):
         return not self == other
+
+    @classmethod
+    def _from_part(cls, keys, result):
+        """
+            Get a new QueryResult from an existing sliced or filtered result
+
+            Returns:
+                QueryResult
+        """
+        qr = cls()
+        qr._keys = keys
+        qr._result = result
+        return qr
+
+    @property
+    def empty(self):
+        """
+            Check if both the result and keys are empty
+
+            Returns:
+                bool
+        """
+        return bool(not self._keys and not self._result)
 
     @property
     def result(self):
@@ -213,10 +247,12 @@ class QueryResult(object):
         return QueryResultRow(self._keys, self._result[0])
 
     def values(self):
-        return self.list()
+        for item in self.list():
+            yield item
 
     def keys(self):
-        return copy.deepcopy(self._keys)
+        for key in self._keys:
+            yield key
 
     def items(self):
         for key, value in six.iteritems(self.dict()):
@@ -231,3 +267,41 @@ class QueryResult(object):
 
     def pop(self, index=-1):
         return QueryResultRow(self._keys, self._result.pop(index))
+
+    def append(self, other):
+        if not isinstance(other, QueryResultRow):
+            raise NotImplementedError('Appending object must be a QueryResultRow')
+        if self.empty:
+            self._keys = other._keys
+        elif self._keys != other._keys:
+            raise ValueError('Keys in appending row do not match, cannot append')
+        self._result.append(other._row)
+
+    def extend(self, other):
+        if not isinstance(other, QueryResult):
+            raise NotImplementedError('Extending object must be a QueryResult')
+        if self.empty:
+            self._keys = other._keys
+        elif self._keys != other._keys:
+            raise ValueError('Keys in extending result to not match, cannot extend')
+        self._result.extend(other._result)
+
+    def filter(self, predicate, inplace=False):
+        """
+            Filter the query result rows
+
+            Args:
+                predicate : callable - The function to apply to each result row, should return a boolean
+
+            Kwargs:
+                inplace : boolean - Whether to alter the results in-place or return a new QueryResult object
+
+            Returns:
+                QueryResult with filtered results
+        """
+        filtered = [row for row in self._result if predicate(QueryResultRow(self._keys, row))]
+        if inplace:
+            self._result = filtered
+            return None
+        else:
+            return self._from_part(self._keys, filtered)
