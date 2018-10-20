@@ -137,10 +137,6 @@ class QueryResult(object):
 
     def __getitem__(self, key):
         if isinstance(key, six.string_types):
-            # Check if key is 'keys', in which case return the result keys
-            # Using this to allow the keys() method to be a generator
-            if key == 'keys':
-                return copy.deepcopy(self._keys)
             # Return the column corresponding with this key
             if key not in self._keys:
                 raise KeyError('Not found : %r' % key)
@@ -266,9 +262,24 @@ class QueryResult(object):
         return value
 
     def pop(self, index=-1):
+        """
+            Remove and return the row at the given index (default last)
+
+            Args:
+                index : int - The index of the row to remove and return
+
+            Returns:
+                QueryResultRow
+        """
         return QueryResultRow(self._keys, self._result.pop(index))
 
     def append(self, other):
+        """
+            Append a QueryResultRow with matching keys to the current result
+
+            Args:
+                other : QueryResultRow - The row to append
+        """
         if not isinstance(other, QueryResultRow):
             raise NotImplementedError('Appending object must be a QueryResultRow')
         if self.empty:
@@ -278,12 +289,18 @@ class QueryResult(object):
         self._result.append(other._row)
 
     def extend(self, other):
+        """
+            Extend the current result with another QueryResult with matching keys
+
+            Args:
+                other : QueryResult - The row to append
+        """
         if not isinstance(other, QueryResult):
             raise NotImplementedError('Extending object must be a QueryResult')
         if self.empty:
             self._keys = other._keys
         elif self._keys != other._keys:
-            raise ValueError('Keys in extending result to not match, cannot extend')
+            raise ValueError('Keys in other QueryResult to not match, cannot extend')
         self._result.extend(other._result)
 
     def filter(self, predicate, inplace=False):
