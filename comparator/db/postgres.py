@@ -39,12 +39,11 @@ class PostgresDb(BaseDb):
             self._engine = sqlalchemy.create_engine(url, connect_args=conn_params)
 
     def __repr__(self):
-        return '%s -- %r' % (self.__class__, self._engine.url)
+        return '<{db.__class__.__name__}({db._engine.url.host})>'.format(db=self)
 
-    def __str__(self):
-        if self._name is not None:
-            return self._name
-        return self._engine.url.host
+    @property
+    def name(self):
+        return self._name
 
     def _connect(self):
         self._conn = self._engine.connect()

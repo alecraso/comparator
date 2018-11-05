@@ -108,10 +108,7 @@ class QueryResult(object):
         self._keys = keys
 
     def __repr__(self):
-        return '%r' % self._result
-
-    def __str__(self):
-        return str(self.__repr__())
+        return '<QueryResult: {qr._result}>'.format(qr=self)
 
     def __bool__(self):
         return bool(self._result)
