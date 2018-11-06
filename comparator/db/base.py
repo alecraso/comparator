@@ -1,8 +1,6 @@
 """
     Base class for establishing connections to source databases
 """
-from __future__ import unicode_literals
-
 import os
 
 from comparator.util import ABC, abstractmethod

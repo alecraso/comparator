@@ -1,8 +1,6 @@
 """
     Base classes for running comparisons between two databases
 """
-from __future__ import unicode_literals
-
 import copy
 import inspect
 import logging

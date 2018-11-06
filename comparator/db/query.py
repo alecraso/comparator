@@ -1,8 +1,6 @@
 """
     Base classes to house the results of queries against a source databse
 """
-from __future__ import unicode_literals
-
 import copy
 import datetime
 import decimal
