@@ -6,7 +6,7 @@ from sqlalchemy.engine import ResultProxy
 
 from comparator import comps
 from comparator import QueryPair, Comparator, ComparatorSet
-from comparator.exceptions import InvalidCompSetException
+from comparator.exceptions import InvalidCompSetException, QueryFormatError
 from comparator.db import PostgresDb
 from comparator.db.query import QueryResult
 from comparator.models import ComparatorResult
@@ -69,6 +69,11 @@ def test_query_pair_queries():
     formatted = qp._format_rquery()
     assert formatted == 'select * from somewhere where id in (1, 4)'
 
+    qp._rquery = 'select * from somewhere where id in {{ notreal }}'
+    with pytest.raises(QueryFormatError):
+        qp._format_rquery()
+
+    qp._rquery = rquery
     qp._lresult = string_results
     formatted = qp._format_rquery()
     assert formatted == "select * from somewhere where id in ('one', 'four')"
@@ -260,6 +265,9 @@ def test_comparatorset():
         ComparatorSet()
 
     with pytest.raises(InvalidCompSetException):
+        ComparatorSet('bananas')
+
+    with pytest.raises(InvalidCompSetException):
         ComparatorSet(qp1, qp1)
 
     with pytest.raises(InvalidCompSetException):
@@ -297,7 +305,7 @@ def test_comparatorset():
             comps=[comps.LEN_COMP, 'nope'],
             names=names)
 
-    cmps = [comps.LEN_COMP, comps.FIRST_COMP]
+    cmps = [[comps.LEN_COMP], [comps.FIRST_COMP]]
     cs = ComparatorSet(
         [qp2, qp2],
         comps=cmps,
@@ -307,7 +315,7 @@ def test_comparatorset():
         assert c._qp._right is r
         assert c._qp._lquery == query
         assert c._qp._rquery == other_query
-        assert c._comps == [comps.COMPS.get(cmps[i])]
+        assert c._comps == [comps.COMPS.get(cmps[i][0])]
         assert c.name == names[i]
 
     assert cs[0]
@@ -333,7 +341,8 @@ def test_comparatorset_from_dict():
     cs = ComparatorSet.from_dict({'lquery': query, 'rquery': other_query}, l, r)
     assert isinstance(cs, ComparatorSet)
 
-    d1 = {'lquery': query, 'rquery': other_query}
+    qp = QueryPair(l, r, query, other_query)
+    d1 = {'qp': qp}
     d2 = {'name': 'test', 'lquery': query, 'rquery': other_query, 'comps': comps.LEN_COMP}
     cs = ComparatorSet.from_dict([d1, d2], l, r, default_comp=comps.FIRST_COMP)
     for c in cs:

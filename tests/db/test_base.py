@@ -32,6 +32,10 @@ def test_base_db():
     assert db._conn is None
     assert db.connected is False
 
+    with mock.patch('comparator.db.base.BaseDb._connect'):
+        db.connect()
+    assert db.connected is False
+
     with mock.patch('comparator.db.base.BaseDb._close'):
         db.close()
 
@@ -40,3 +44,12 @@ def test_base_db():
 
     with pytest.raises(TypeError):
         db.execute()
+
+    with pytest.raises(NotImplementedError):
+        db.query('select 1')
+
+    with pytest.raises(NotImplementedError):
+        db.execute('insert 1')
+
+    with pytest.raises(NotImplementedError):
+        db._close()
