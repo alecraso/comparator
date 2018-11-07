@@ -16,6 +16,7 @@ other_query = 'select count(*) from somewhere'
 left_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}]
 right_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}]
 mismatch_right_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}, {'a': 7, 'b': 8, 'c': 9}]
+string_query_results = [{'a': 'one', 'b': 'two', 'c': 'three'}, {'a': 'four', 'b': 'five', 'c': 'six'}]
 
 
 def get_mock_query_result(values):
@@ -27,6 +28,7 @@ def get_mock_query_result(values):
 left_results = get_mock_query_result(left_query_results)
 right_results = get_mock_query_result(right_query_results)
 mismatch_right_results = get_mock_query_result(mismatch_right_query_results)
+string_results = get_mock_query_result(string_query_results)
 
 expected_default_result = ('basic_comp', True)
 expected_multiple_result = [
@@ -64,6 +66,10 @@ def test_query_pair_queries():
     qp._lresult = left_results
     formatted = qp._format_rquery()
     assert formatted == 'select * from somewhere where id in (1, 4)'
+
+    qp._lresult = string_results
+    formatted = qp._format_rquery()
+    assert formatted == "select * from somewhere where id in ('one', 'four')"
 
 
 def test_comparator():
