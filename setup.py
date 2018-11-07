@@ -1,20 +1,37 @@
+import re
+
 from io import open
 from setuptools import setup, find_packages
 
-with open('README.rst', encoding='utf-8') as f:
-    readme = f.read()
+README = 'README.rst'
+CHANGES = 'CHANGES.rst'
+VERSION_FILE = 'comparator/__init__.py'
 
-with open('CHANGES.rst', encoding='utf-8') as f:
-    changes = f.read()
+
+def read(path):
+    with open(path, encoding='utf-8') as f:
+        return f.read()
+
+
+def find_version():
+    version_file = read(VERSION_FILE)
+    version_match = re.search(
+        r"^__version__ = ['\"]([^'\"]*)['\"]",
+        version_file,
+        re.M)
+    if version_match:
+        return version_match.group(1)
+
+    raise RuntimeError("Unable to find version string.")
 
 
 setup(
     name='comparator',
-    version='0.3.2',
+    version=find_version(),
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
-    long_description=readme + '\n' + changes,
+    long_description=read(README) + '\n' + read(CHANGES),
     license='Apache 2.0',
     keywords='utility compare database',
     url='https://github.com/aaronbiller/comparator',
