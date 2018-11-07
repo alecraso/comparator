@@ -1,8 +1,6 @@
 """
     Base class for establishing connections to source databases
 """
-from __future__ import unicode_literals
-
 import os
 
 from comparator.util import ABC, abstractmethod
@@ -36,7 +34,7 @@ class BaseDb(ABC):
 
             Should set self._conn with the connection object
         """
-        pass
+        raise NotImplementedError()
 
     def connect(self):
         """Connect to the source database
@@ -53,7 +51,7 @@ class BaseDb(ABC):
         """
             Close any open connection
         """
-        pass
+        raise NotImplementedError()
 
     def close(self):
         """Close any open connection
@@ -79,7 +77,7 @@ class BaseDb(ABC):
             Returns:
                 QueryResult containing the query result
         """
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
     def execute(self, query_string, **kwargs):
@@ -97,4 +95,4 @@ class BaseDb(ABC):
             Returns:
                 None
         """
-        pass
+        raise NotImplementedError()

@@ -71,25 +71,22 @@ def test_bigquery():
     assert bq1._db_type is None
     assert bq1.project is None
 
-    assert repr(bq1) == "<class 'comparator.db.bigquery.BigQueryDb'> -- None"
-    assert str(bq1) == 'BigQueryDb'
-
 
 def test_with_kwargs():
     name = 'Alphabet'
     bq1 = BigQueryDb(name)
-    assert str(bq1) == name
+    assert str(bq1) == '<BigQueryDb(None)>'
+    assert bq1.name == name
 
     bq2 = BigQueryDb(project=project)
-    assert repr(bq2) == "<class 'comparator.db.bigquery.BigQueryDb'> -- '{}'".format(project)
-    assert str(bq2) == project
+    assert str(bq2) == '<BigQueryDb({})>'.format(project)
     assert bq2.project == project
     assert bq2._conn_kwargs == expected_conn_kwargs
 
     bq3 = BigQueryDb()
-    assert str(bq3) == 'BigQueryDb'
+    assert str(bq3) == '<BigQueryDb(None)>'
     bq3.project = project
-    assert str(bq3) == project
+    assert str(bq3) == '<BigQueryDb({})>'.format(project)
 
     bq4 = BigQueryDb(genuflect='the-vatican-rag', locution='DE')
     assert bq4._conn_kwargs == BIGQUERY_DEFAULT_CONN_KWARGS

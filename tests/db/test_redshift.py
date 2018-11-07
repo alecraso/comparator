@@ -22,9 +22,6 @@ def test_redshift():
     assert rs._conn_kwargs['port'] == 5439
     assert rs._db_type == expected_db_type
 
-    assert repr(rs) == "<class 'comparator.db.redshift.RedshiftDb'> -- {}".format(expected_default_url)
-    assert str(rs) == 'localhost'
-
     rs1 = RedshiftDb(port=1234)
     assert rs1._conn_kwargs['port'] == 1234
 
@@ -33,8 +30,8 @@ def test_postgres_and_redshift():
     rs = RedshiftDb(name='red')
     pg = PostgresDb(name='blue')
 
-    assert str(rs) == 'red'
-    assert str(pg) == 'blue'
+    assert str(rs) == '<RedshiftDb(localhost)>'
+    assert str(pg) == '<PostgresDb(localhost)>'
 
     assert rs._conn_kwargs
     assert rs._conn_kwargs['port'] == 5439

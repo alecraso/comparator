@@ -51,33 +51,30 @@ class DbConfig(object):
 
     def __init__(self, config_file=None):
         if config_file is not None:
-            _log.info('Setting config from provided path')
+            _log.debug('Setting config from provided path')
             self._set_config_from_file(config_file)
 
         if self._config is None:
             env_config_file = os.getenv('COMPARATOR_CONFIG_FILE', None)
             if env_config_file:
-                _log.info('Setting config from environment variable')
+                _log.debug('Setting config from environment variable')
                 env_config_file = Path(env_config_file).expanduser().resolve()
                 self._set_config_from_file(env_config_file)
             else:
-                _log.warning('Environment variable not set, falling back')
+                _log.debug('Environment variable not set, falling back')
                 self._set_config_from_file(DEFAULT_CONFIG_FILE)
 
         if self._config is None:
             raise AttributeError('Could not find valid configuration file')
         else:
-            _log.info('Found configuration file at %s', self._config.as_posix())
+            _log.debug('Found configuration file at %s', self._config.as_posix())
             self._load_dbs()
 
     def __repr__(self):
-        return '%s -- %r' % (self.__class__, self._config)
+        return "<DbConfig('{self._config}'): {self._dbs}>".format(self=self)
 
     def __str__(self):
-        return '%s: %r' % (self.__class__.__name__,
-                           [db['name'] for db in self.dbs
-                            if isinstance(db, dict) and
-                            db.get('name')])
+        return str(self._config)
 
     @property
     def dbs(self):
@@ -112,10 +109,10 @@ class DbConfig(object):
 
         for db in dbs:
             if not isinstance(db, dict):
-                _log.warning('Misconfigured db, ignoring : %r', db)
+                _log.debug('Misconfigured db, ignoring : %r', db)
                 continue
             if not db.get('name'):
-                _log.warning('Db has no name, ignoring : %r', db)
+                _log.debug('Db has no name, ignoring : %r', db)
                 continue
 
             cleaned_name = self._clean_db_name(db['name'])

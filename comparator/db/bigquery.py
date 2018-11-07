@@ -45,14 +45,11 @@ class BigQueryDb(BaseDb):
                 self._conn_kwargs[k] = v
 
     def __repr__(self):
-        return '%s -- %r' % (self.__class__, self._conn_kwargs['project'])
+        return '<BigQueryDb({project})>'.format(project=self._conn_kwargs['project'])
 
-    def __str__(self):
-        if self._name is not None:
-            return self._name
-        elif self.project is not None:
-            return self.project
-        return self.__class__.__name__
+    @property
+    def name(self):
+        return self._name
 
     @property
     def project(self):
