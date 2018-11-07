@@ -37,7 +37,7 @@ class QueryPair(object):
         self._set_empty()
 
     def __repr__(self):
-        return '<QueryPair({qp._left} || {qp._right})>'.format(qp=self)
+        return '<QueryPair: {qp._left} || {qp._right}>'.format(qp=self)
 
     @property
     def lresult(self):
@@ -260,7 +260,7 @@ class Comparator(object):
 
     def __repr__(self):
         if self._name is None:
-            return '<{c.__class__}>'.format(c=self)
+            return '<Comparator()>'
         return '<Comparator({c._name})>'.format(c=self)
 
     @property
@@ -270,6 +270,18 @@ class Comparator(object):
     @property
     def results(self):
         return self._results
+
+    @property
+    def query_results(self):
+        return self._qp.query_results
+
+    @property
+    def lresult(self):
+        return self._qp._lresult
+
+    @property
+    def rresult(self):
+        return self._qp._rresult
 
     def _set_empty(self):
         """
@@ -365,9 +377,7 @@ class ComparatorSet(object):
         The resulting set of Comparator objects can be iterated upon and run/checked in a variety of ways.
 
         Args:
-            left : BaseDb - The "left" source database, against which the "left" query will run
-            right : BaseDb - The "right" source database, against which the "right" query will run
-            queries : list - The set of two-member tuples each containing the lquery and rquery strings
+            query_pairs : list - A list of instantiated QueryPair objects
 
         Kwargs:
             comps : list - The set of comparisons that correspond to each query pair. If None, the default_comp or
@@ -378,7 +388,7 @@ class ComparatorSet(object):
                            the list of queries.
             default_comp : callable - The default comparison to use if no comps are passed. Ignored if comps is passed.
     """
-    def __init__(self, query_pairs=None, comps=None, names=None, default_comp=None):
+    def __init__(self, query_pairs, comps=None, names=None, default_comp=None):
         self._set_query_pairs(query_pairs)
         self._set_comps(comps, default_comp)
         self._set_names(names)

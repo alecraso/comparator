@@ -108,6 +108,9 @@ class QueryResult(object):
     def __repr__(self):
         return '<QueryResult: {qr._result}>'.format(qr=self)
 
+    def __str__(self):
+        return self.json()
+
     def __bool__(self):
         return bool(self._result)
 

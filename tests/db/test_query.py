@@ -4,6 +4,7 @@ import json
 import mock
 import pandas as pd
 import pytest
+import types
 
 from collections import OrderedDict
 from google.cloud.bigquery.table import RowIterator
@@ -34,7 +35,7 @@ def test_queryresult():
 
     itr = get_mock_iterator(RowIterator, list())
     qr = QueryResult(itr)
-    assert qr.keys() == list()
+    assert isinstance(qr.keys(), types.GeneratorType)
     assert bool(qr) is False
 
     itr = get_mock_iterator(ResultProxy, results)
@@ -58,16 +59,12 @@ def test_queryresult():
                      (7, decimal.Decimal('8'), datetime.datetime(2018, 10, 1, 0, 0))]
     expected_json = json.dumps(results, cls=DtDecEncoder)
     expected_df = pd.DataFrame(results)
-    expected_str = (
-        "[OrderedDict([('a', 1), ('b', Decimal('2')), ('c', datetime.date(2018, 8, 1))]), "
-        "OrderedDict([('a', 4), ('b', Decimal('5')), ('c', datetime.date(2018, 9, 1))]), "
-        "OrderedDict([('a', 7), ('b', Decimal('8')), ('c', datetime.datetime(2018, 10, 1, 0, 0))])]")
 
     assert qr.list() == expected_list
-    assert qr.values() == expected_list
+    assert [v for v in qr.values()] == expected_list
     assert qr.json() == expected_json
     assert qr.df().equals(expected_df)
-    assert str(qr) == expected_str
+    assert str(qr) == expected_json
 
     expected_items = {'a': (1, 4, 7),
                       'b': (decimal.Decimal(2.0), decimal.Decimal(5.0), decimal.Decimal(8.0)),

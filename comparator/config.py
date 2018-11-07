@@ -71,7 +71,10 @@ class DbConfig(object):
             self._load_dbs()
 
     def __repr__(self):
-        return '<DbConfig({self._config}): {self._dbs}>'.format(self=self)
+        return "<DbConfig('{self._config}'): {self._dbs}>".format(self=self)
+
+    def __str__(self):
+        return str(self._config)
 
     @property
     def dbs(self):

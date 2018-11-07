@@ -5,7 +5,7 @@ import types
 from sqlalchemy.engine import ResultProxy
 
 from comparator import comps
-from comparator import Comparator, ComparatorSet
+from comparator import QueryPair, Comparator, ComparatorSet
 from comparator.exceptions import InvalidCompSetException
 from comparator.db import PostgresDb
 from comparator.db.query import QueryResult
@@ -37,40 +37,64 @@ expected_mismatch_result = [
     ComparatorResult('test', 'len_comp', False)]
 
 
-def test_comparator():
+def test_query_pair():
     l, r = PostgresDb(), PostgresDb()
+    qp = QueryPair(l, r, query)
+    assert qp._lquery == qp._rquery
+    assert qp.empty
+    assert qp.query_results == (None, None)
+    assert qp.lresult is None
+    assert qp.rresult is None
 
     with pytest.raises(TypeError):
-        Comparator(l, r)
+        QueryPair(l, r, query, 1234)
+
+
+def test_query_pair_queries():
+    l, r = PostgresDb(), PostgresDb()
+    rquery = 'select * from somewhere where id in {{ a }}'
+    qp = QueryPair(l, r, query, rquery)
+
+    with mock.patch.object(qp._left, 'query', return_value=left_results):
+        with mock.patch.object(qp._right, 'query', return_value=right_results):
+            with mock.patch.object(qp, '_format_rquery') as mock_fmt:
+                qp.get_query_results()
+    assert mock_fmt.call_count == 1
+
+    qp._lresult = left_results
+    formatted = qp._format_rquery()
+    assert formatted == 'select * from somewhere where id in (1, 4)'
+
+
+def test_comparator():
+    qp1 = QueryPair(PostgresDb(), PostgresDb(), query)
+    qp2 = QueryPair(PostgresDb(), PostgresDb(), query, other_query)
 
     with pytest.raises(TypeError):
-        Comparator(l, r, 1234)
+        Comparator(qp1)
 
-    with pytest.raises(TypeError):
-        Comparator(l, 'derp', query, query)
-
-    c = Comparator(l, r, query)
-    assert c._lquery == query
-    assert c._rquery == query
+    c = Comparator(qp=qp1)
+    assert c._qp._lquery == query
+    assert c._qp._rquery == query
     assert c._comps == [comps.COMPS.get(comps.DEFAULT_COMP)]
-    assert c.name == 'Comparator: localhost | localhost'
+    assert c.name is None
 
-    c = Comparator(l, r, query, other_query, comps.FIRST_COMP, name='Shirley')
-    assert c._lquery == query
-    assert c._rquery == other_query
+    c = Comparator(qp=qp2, comps=comps.FIRST_COMP, name='Shirley')
+    assert c._qp._lquery == query
+    assert c._qp._rquery == other_query
     assert c._comps == [comps.COMPS.get(comps.FIRST_COMP)]
     assert c.name == 'Shirley'
 
-    assert c.query_results == tuple()
+    assert c.query_results == (None, None)
     assert c.results == list()
 
 
 def test_compare_defaults():
-    l, r = PostgresDb(), PostgresDb()
-    c = Comparator(l, r, query)
+    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    c = Comparator(qp=qp)
 
-    with mock.patch.object(c._left, 'query', return_value=left_results):
-        with mock.patch.object(c._right, 'query', return_value=right_results):
+    with mock.patch.object(c._qp._left, 'query', return_value=left_results):
+        with mock.patch.object(c._qp._right, 'query', return_value=right_results):
             assert c.get_query_results() == (left_results, right_results)
 
     assert isinstance(c.compare(), types.GeneratorType)
@@ -93,7 +117,7 @@ def test_compare_defaults():
 
     c.clear()
     assert c._complete is False
-    assert c.query_results == tuple()
+    assert c.query_results == (None, None)
     assert c.results == list()
 
 
@@ -102,12 +126,12 @@ def test_comarison_result():
 
 
 def test_compare_multiple():
-    l, r = PostgresDb(), PostgresDb()
+    qp = QueryPair(PostgresDb(), PostgresDb(), query)
     comparisons = [comps.FIRST_COMP, comps.LEN_COMP]
-    c = Comparator(l, r, query, comps=comparisons)
+    c = Comparator(qp=qp, comps=comparisons)
 
-    with mock.patch.object(c._left, 'query', return_value=left_results):
-        with mock.patch.object(c._right, 'query', return_value=right_results):
+    with mock.patch.object(c._qp._left, 'query', return_value=left_results):
+        with mock.patch.object(c._qp._right, 'query', return_value=right_results):
             assert c.get_query_results() == (left_results, right_results)
 
     assert isinstance(c.lresult, QueryResult)
@@ -120,38 +144,36 @@ def test_compare_multiple():
 
 
 def test_compare_mismatch():
-    l, r = PostgresDb(), PostgresDb()
+    qp = QueryPair(PostgresDb(), PostgresDb(), query)
     comparisons = [comps.FIRST_COMP, comps.LEN_COMP]
-    c = Comparator(l, r, query, comps=comparisons)
+    c = Comparator(qp=qp, comps=comparisons)
 
-    with mock.patch.object(c._left, 'query', return_value=left_results):
-        with mock.patch.object(c._right, 'query', return_value=mismatch_right_results):
+    with mock.patch.object(c._qp._left, 'query', return_value=left_results):
+        with mock.patch.object(c._qp._right, 'query', return_value=mismatch_right_results):
             res = c.run_comparisons()
-    assert c._query_results == (left_results, mismatch_right_results)
+    assert c.query_results == (left_results, mismatch_right_results)
     assert res == expected_mismatch_result
 
 
 def test_left_right_queries():
-    l, r = PostgresDb(), PostgresDb()
+    qp1 = QueryPair(PostgresDb(), PostgresDb(), query)
+    qp2 = QueryPair(PostgresDb(), PostgresDb(), query, other_query)
 
-    with pytest.raises(TypeError):
-        Comparator(l, r, lquery=query, rquery=1234)
+    c1 = Comparator(qp=qp1)
+    assert c1._qp._lquery == query
+    assert c1._qp._rquery == query
 
-    c1 = Comparator(l, r, lquery=query)
-    assert c1._lquery == query
-    assert c1._rquery == query
-
-    c = Comparator(l, r, query, other_query)
-    assert c._lquery == query
-    assert c._rquery == other_query
+    c = Comparator(qp=qp2)
+    assert c._qp._lquery == query
+    assert c._qp._rquery == other_query
 
 
 def test_results_run():
-    l, r = PostgresDb(), PostgresDb()
-    c = Comparator(l, r, query)
+    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    c = Comparator(qp=qp)
 
-    with mock.patch.object(c._left, 'query', return_value=left_results) as lq:
-        with mock.patch.object(c._right, 'query', return_value=right_results) as rq:
+    with mock.patch.object(c._qp._left, 'query', return_value=left_results) as lq:
+        with mock.patch.object(c._qp._right, 'query', return_value=right_results) as rq:
             res = c.get_query_results(run=True)
     c.get_query_results(run=True)
 
@@ -161,8 +183,8 @@ def test_results_run():
 
 
 def test_no_comps():
-    l, r = PostgresDb(), PostgresDb()
-    c = Comparator(l, r, query, comps='notarealcomparison')
+    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    c = Comparator(qp=qp, comps='notarealcomparison')
     assert c._comps == [comps.COMPS.get(comps.DEFAULT_COMP)]
 
 
@@ -172,11 +194,11 @@ def test_custom_comparison():
     expected_result = [ComparatorResult('test', 'custom_comp', True),
                        ComparatorResult('test', 'lambda x, y: len(x) < len(y)', True)]
 
-    l, r = PostgresDb(), PostgresDb()
-    c = Comparator(l, r, query, comps=[custom_comp, lambda x, y: len(x) < len(y)])
+    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    c = Comparator(qp=qp, comps=[custom_comp, lambda x, y: len(x) < len(y)])
 
-    with mock.patch.object(c._left, 'query', return_value=left_results):
-        with mock.patch.object(c._right, 'query', return_value=mismatch_right_results):
+    with mock.patch.object(c._qp._left, 'query', return_value=left_results):
+        with mock.patch.object(c._qp._right, 'query', return_value=mismatch_right_results):
             res = c.run_comparisons()
 
     assert res == expected_result
@@ -187,16 +209,16 @@ def test_non_bool_comparison():
         return len(right) - len(left)
     expected_result = [ComparatorResult('test', 'custom_comp', 1)]
 
-    l, r = PostgresDb(), PostgresDb()
-    c = Comparator(l, r, query, comps=custom_comp, name='test')
+    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    c = Comparator(qp=qp, comps=custom_comp, name='test')
 
-    with mock.patch.object(c._left, 'query', return_value=left_results):
-        with mock.patch.object(c._right, 'query', return_value=mismatch_right_results):
+    with mock.patch.object(c._qp._left, 'query', return_value=left_results):
+        with mock.patch.object(c._qp._right, 'query', return_value=mismatch_right_results):
             res = c.run_comparisons()
 
     assert res == expected_result
     comp = res[0]
-    assert str(comp) == "('custom_comp', 1)"
+    assert str(comp) == 'custom_comp : 1'
     assert comp.comparator_name == 'test'
     assert comp.name == 'custom_comp'
     assert comp['name'] == 'custom_comp'
@@ -219,59 +241,60 @@ def test_non_bool_comparison():
 
 def test_comparatorset():
     l, r = PostgresDb(), PostgresDb()
+    qp1 = QueryPair(l, r, query)
+    qp2 = QueryPair(l, r, query, other_query)
 
     with pytest.raises(TypeError):
-        ComparatorSet(l, r)
+        ComparatorSet()
 
     with pytest.raises(InvalidCompSetException):
-        ComparatorSet(l, r, 1234)
+        ComparatorSet(qp1, qp1)
 
-    with pytest.raises(TypeError):
-        ComparatorSet(l, 'derp', (query, query))
+    with pytest.raises(InvalidCompSetException):
+        ComparatorSet([qp1, qp1], comps='not_a_callable')
 
-    cs = ComparatorSet(l, r, (query, query))
+    with pytest.raises(InvalidCompSetException):
+        ComparatorSet([qp1, qp1], names='too_short')
+
+    cs = ComparatorSet([qp1, qp1])
     for c in cs:
         assert isinstance(c, Comparator)
-        assert c._left is l
-        assert c._right is r
-        assert c._lquery == query
-        assert c._rquery == query
+        assert c._qp._left is l
+        assert c._qp._right is r
+        assert c._qp._lquery == query
+        assert c._qp._rquery == query
         assert c._comps == [comps.COMPS.get(comps.DEFAULT_COMP)]
-        assert c.name == 'Comparator: localhost | localhost'
+        assert c.name is None
 
     with pytest.raises(InvalidCompSetException):
         ComparatorSet(
-            l, r,
-            [(query, other_query), (query, other_query)],
+            [qp2, qp2],
             comps=[comps.LEN_COMP, comps.FIRST_COMP],
             names='Shirley')
 
     names = ['Shirley', 'Eugene']
     with pytest.raises(InvalidCompSetException):
         ComparatorSet(
-            l, r,
-            [(query, other_query), (query, other_query)],
+            [qp2, qp2],
             comps=comps.COMPS.get(comps.LEN_COMP),
             names=names)
 
     with pytest.raises(InvalidCompSetException):
         ComparatorSet(
-            l, r,
-            [(query, other_query), (query, other_query)],
+            [qp2, qp2],
             comps=[comps.LEN_COMP, 'nope'],
             names=names)
 
     cmps = [comps.LEN_COMP, comps.FIRST_COMP]
     cs = ComparatorSet(
-        l, r,
-        [(query, other_query), (query, other_query)],
+        [qp2, qp2],
         comps=cmps,
         names=names)
     for i, c in enumerate(cs):
-        assert c._left is l
-        assert c._right is r
-        assert c._lquery == query
-        assert c._rquery == other_query
+        assert c._qp._left is l
+        assert c._qp._right is r
+        assert c._qp._lquery == query
+        assert c._qp._rquery == other_query
         assert c._comps == [comps.COMPS.get(cmps[i])]
         assert c.name == names[i]
 
@@ -287,81 +310,29 @@ def test_comparatorset_from_dict():
     l, r = PostgresDb(), PostgresDb()
 
     with pytest.raises(TypeError):
-        ComparatorSet.from_dict(l, r)
+        ComparatorSet.from_dict()
 
     with pytest.raises(InvalidCompSetException):
-        ComparatorSet.from_dict(l, r, 'what')
+        ComparatorSet.from_dict('what', l, r)
 
     with pytest.raises(InvalidCompSetException):
-        ComparatorSet.from_dict(l, r, {'lquery': query})
+        ComparatorSet.from_dict({'lquery': query}, l, r)
 
-    cs = ComparatorSet.from_dict(l, r, {'lquery': query, 'rquery': other_query})
+    cs = ComparatorSet.from_dict({'lquery': query, 'rquery': other_query}, l, r)
     assert isinstance(cs, ComparatorSet)
 
     d1 = {'lquery': query, 'rquery': other_query}
     d2 = {'name': 'test', 'lquery': query, 'rquery': other_query, 'comps': comps.LEN_COMP}
-    cs = ComparatorSet.from_dict(l, r, [d1, d2], default_comp=comps.FIRST_COMP)
+    cs = ComparatorSet.from_dict([d1, d2], l, r, default_comp=comps.FIRST_COMP)
     for c in cs:
-        assert c._left is l
-        assert c._right is r
-        assert c._lquery == query
-        assert c._rquery == other_query
-    assert cs[0].name == 'Comparator: localhost | localhost'
+        assert c._qp._left is l
+        assert c._qp._right is r
+        assert c._qp._lquery == query
+        assert c._qp._rquery == other_query
+    assert cs[0].name is None
     assert cs[1].name == 'test'
     assert cs[0]._comps == [comps.COMPS.get(comps.FIRST_COMP)]
     assert cs[1]._comps == [comps.COMPS.get(comps.LEN_COMP)]
 
     with pytest.raises(IndexError):
         cs[2]
-
-
-def test_comaratorset_from_list():
-    l, r = PostgresDb(), PostgresDb()
-
-    with pytest.raises(TypeError):
-        ComparatorSet.from_list(l, r)
-
-    with pytest.raises(TypeError):
-        ComparatorSet.from_list(l, r, 'what')
-
-    with pytest.raises(InvalidCompSetException):
-        ComparatorSet.from_list(l, r, (query, ))
-
-    with pytest.raises(InvalidCompSetException):
-        ComparatorSet.from_list(l, r, ('name', query, query, 'nope'))
-
-    with pytest.raises(InvalidCompSetException):
-        ComparatorSet.from_list(l, r, ('name', query, query, comps.LEN_COMP, 'extra'))
-
-    cs = ComparatorSet.from_list(l, r, (query, other_query))
-    assert isinstance(cs, ComparatorSet)
-
-    t1 = (query, other_query)
-    t2 = ('test', query, other_query, comps.LEN_COMP)
-    t3 = (query, other_query, comps.COMPS.get(comps.BASIC_COMP))
-    t4 = (query, other_query, comps.BASIC_COMP)
-    t5 = ('testing', query, other_query)
-    t6 = ('running', query, other_query, comps.COMPS.get(comps.BASIC_COMP))
-    cs = ComparatorSet.from_list(l, r, [t1, t2, t3, t4, t5, t6], default_comp=comps.FIRST_COMP)
-    for c in cs:
-        assert c._left is l
-        assert c._right is r
-        assert c._lquery == query
-        assert c._rquery == other_query
-
-    assert cs[0].name == 'Comparator: localhost | localhost'
-    assert cs[1].name == 'test'
-    assert cs[2].name == 'Comparator: localhost | localhost'
-    assert cs[3].name == 'Comparator: localhost | localhost'
-    assert cs[4].name == 'testing'
-    assert cs[5].name == 'running'
-
-    assert cs[0]._comps == [comps.COMPS.get(comps.FIRST_COMP)]
-    assert cs[1]._comps == [comps.COMPS.get(comps.LEN_COMP)]
-    assert cs[2]._comps == [comps.COMPS.get(comps.BASIC_COMP)]
-    assert cs[3]._comps == [comps.COMPS.get(comps.BASIC_COMP)]
-    assert cs[4]._comps == [comps.COMPS.get(comps.FIRST_COMP)]
-    assert cs[5]._comps == [comps.COMPS.get(comps.BASIC_COMP)]
-
-    with pytest.raises(IndexError):
-        cs[6]

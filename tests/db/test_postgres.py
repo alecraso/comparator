@@ -20,19 +20,17 @@ def test_postgres():
     assert pg._name is None
     assert pg._db_type == 'postgresql'
 
-    assert repr(pg) == "<class 'comparator.db.postgres.PostgresDb'> -- {}".format(expected_default_url)
-    assert str(pg) == 'localhost'
-
 
 def test_with_kwargs():
     name = 'Euphegenia Doubtfire, dear.'
     pg1 = PostgresDb(name)
-    assert str(pg1) == name
+    assert str(pg1) == '<PostgresDb(localhost)>'
+    assert pg1.name == name
 
     conn_string = 'postgresql://user:pass@host:5432/db'
     pg2 = PostgresDb(conn_string=conn_string)
     pg2._conn_kwargs is None
-    assert str(pg2) == 'host'
+    assert str(pg2) == '<PostgresDb(host)>'
 
     host = 'notlocahost'
     pg3 = PostgresDb(host=host)

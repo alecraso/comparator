@@ -73,10 +73,7 @@ def test_default_config():
     assert conf._config == test_config_file
     assert conf.dbs == expected_db_list
 
-    assert repr(conf) == "<class 'comparator.config.DbConfig'> -- %r" % test_config_file
-    assert str(conf) == 'DbConfig: %r' % [db['name'] for db in expected_db_list
-                                          if isinstance(db, dict) and
-                                          db.get('name')]
+    assert str(conf) == str(test_config_file)
 
 
 def test_env_variable():
