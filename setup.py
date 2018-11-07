@@ -1,6 +1,8 @@
 from io import open
 from setuptools import setup, find_packages
 
+from comparator import __version__
+
 with open('README.rst', encoding='utf-8') as f:
     readme = f.read()
 
@@ -10,7 +12,7 @@ with open('CHANGES.rst', encoding='utf-8') as f:
 
 setup(
     name='comparator',
-    version='0.3.2',
+    version=__version__,
     author='Aaron Biller',
     author_email='aaronbiller@gmail.com',
     description='Utility for comparing results between data sources',
