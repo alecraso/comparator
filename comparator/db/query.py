@@ -26,6 +26,14 @@ class DtDecEncoder(json.JSONEncoder):
 
 
 class QueryResultRow(object):
+    """
+        A container object providing functionality and syntactic sugar
+        on top of a single row of a query result
+
+        Args:
+            keys : list - The keys (AKA column names) of the query result
+            row : OrderedDict - The row of data from the query result
+    """
     def __init__(self, keys, row):
         self._keys = keys
         self._row = row
@@ -83,6 +91,77 @@ class QueryResultRow(object):
         return value
 
 
+class QueryResultCol(object):
+    """
+        A container object providing functionality and syntactic sugar
+        on top of a single column of a query result
+
+        Args:
+            key : str - The key (AKA column name) of the query result
+            col : tuple - The column of data from the query result
+    """
+    def __init__(self, key, col):
+        self._key = key
+        self._col = col
+
+    def __repr__(self):
+        return str(self._col)
+
+    def __str__(self):
+        # Calling str() on string type values to avoid unicode strings in python 2
+        return str(tuple([str(v) if isinstance(v, six.string_types) else v for v in self._col]))
+
+    def __bool__(self):
+        return bool(self._col)
+
+    __nonzero__ = __bool__
+
+    def __iter__(self):
+        self._index = 0
+        return self
+
+    def __next__(self):
+        self._index += 1
+        try:
+            col = self._col[self._index - 1]
+        except IndexError:
+            raise StopIteration
+        return col
+
+    next = __next__
+
+    def __getattr__(self, name):
+        return self.__getitem__(str(name))
+
+    def __getitem__(self, key):
+        if isinstance(key, six.string_types):
+            # Return the column corresponding with this key
+            if key != self._key:
+                raise KeyError('Not found : %r' % key)
+            value = copy.deepcopy(self._col)
+        elif isinstance(key, six.integer_types):
+            # Return the row corresponding with this index
+            value = self._col[key]
+        elif isinstance(key, slice):
+            # Return the rows corresponding with this slice
+            sliced = [self._col[ii] for ii in range(*key.indices(len(self._col)))]
+            value = tuple(sliced)
+        else:
+            raise TypeError('Lookups must be done with integers or strings, not %s' % type(key))
+        return value
+
+    def __len__(self):
+        return len(self._col)
+
+    def __eq__(self, other):
+        if not isinstance(other, QueryResultCol):
+            return NotImplemented
+        return self._col == other._col
+
+    def __ne__(self, other):
+        return not self == other
+
+
 class QueryResult(object):
     def __init__(self, query_iterator=None):
         if query_iterator is not None:
@@ -138,7 +217,8 @@ class QueryResult(object):
             # Return the column corresponding with this key
             if key not in self._keys:
                 raise KeyError('Not found : %r' % key)
-            value = self.dict()[key]
+            col = tuple([row[key] for row in self._result])
+            value = QueryResultCol(key, col)
         elif isinstance(key, six.integer_types):
             # Return the row corresponding with this index
             row = self._result[key]

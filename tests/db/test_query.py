@@ -10,7 +10,7 @@ from collections import OrderedDict
 from google.cloud.bigquery.table import RowIterator
 from sqlalchemy.engine import ResultProxy
 
-from comparator.db.query import QueryResult, QueryResultRow, DtDecEncoder
+from comparator.db.query import QueryResult, QueryResultRow, QueryResultCol, DtDecEncoder
 
 results = [OrderedDict([('a', 1), ('b', decimal.Decimal(2.0)), ('c', datetime.date(2018, 8, 1))]),
            OrderedDict([('a', 4), ('b', decimal.Decimal(5.0)), ('c', datetime.date(2018, 9, 1))]),
@@ -48,8 +48,9 @@ def test_queryresult():
     for row in qr:
         assert isinstance(row, QueryResultRow)
 
-    assert qr.a == (1, 4, 7)
-    assert qr['a'] == (1, 4, 7)
+    assert qr.a == QueryResultCol('a', (1, 4, 7))
+    assert qr['a'] == QueryResultCol('a', (1, 4, 7))
+    assert isinstance(qr.a, QueryResultCol)
     assert isinstance(qr[0], QueryResultRow)
     with pytest.raises(TypeError):
         qr[get_mock_iterator]
@@ -72,7 +73,7 @@ def test_queryresult():
     for k, v in qr.items():
         assert expected_items[k] == v
 
-    assert qr.get('a') == (1, 4, 7)
+    assert qr.get('a') == QueryResultCol('a', (1, 4, 7))
     assert qr.get(1) is None
     assert qr.get('d') is None
 
@@ -106,6 +107,33 @@ def test_queryresultrow():
     assert qrr.get('a') == 1
     assert qrr.get(1) is None
     assert qrr.get('d') is None
+
+
+def test_queryresultrcol():
+    itr = get_mock_iterator(ResultProxy, results)
+    qr = QueryResult(itr)
+    qrc = qr.a
+
+    assert bool(qrc) is True
+
+    assert qrc.a == qrc['a'] == (1, 4, 7)
+    assert qrc[0] == 1
+    assert qrc[1] == 4
+    assert qrc[2] == 7
+    with pytest.raises(TypeError):
+        qrc[get_mock_iterator]
+    with pytest.raises(KeyError):
+        qrc['b']
+    with pytest.raises(IndexError):
+        qrc[3]
+
+    assert len(qrc) == 3
+
+    assert qrc._key == 'a'
+    assert str(qrc) == '(1, 4, 7)'
+
+    assert str(QueryResultCol('a', ('one', 'two', 'three'))) == "('one', 'two', 'three')"
+    assert str(QueryResultCol(u'a', (u'one', u'two', u'three'))) == "('one', 'two', 'three')"
 
 
 def test_dtdecencoder():

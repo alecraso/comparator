@@ -112,7 +112,7 @@ class QueryPair(object):
             rquery = self._rquery
             keys = [key.strip('{ }') for key in formatting]
 
-            _log.info('Found result formatting for keys : %r', keys)
+            _log.info('While formatting rquery, found slot for keys : %r', keys)
 
             for fmt, key in zip(formatting, keys):
                 try:

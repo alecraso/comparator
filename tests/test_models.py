@@ -17,6 +17,7 @@ left_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}]
 right_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}]
 mismatch_right_query_results = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}, {'a': 7, 'b': 8, 'c': 9}]
 string_query_results = [{'a': 'one', 'b': 'two', 'c': 'three'}, {'a': 'four', 'b': 'five', 'c': 'six'}]
+unicode_query_results = [{u'a': u'one', u'b': u'two', u'c': u'three'}, {u'a': u'four', u'b': u'five', u'c': u'six'}]
 
 
 def get_mock_query_result(values):
@@ -29,6 +30,7 @@ left_results = get_mock_query_result(left_query_results)
 right_results = get_mock_query_result(right_query_results)
 mismatch_right_results = get_mock_query_result(mismatch_right_query_results)
 string_results = get_mock_query_result(string_query_results)
+unicode_results = get_mock_query_result(unicode_query_results)
 
 expected_default_result = ('basic_comp', True)
 expected_multiple_result = [
@@ -68,6 +70,10 @@ def test_query_pair_queries():
     assert formatted == 'select * from somewhere where id in (1, 4)'
 
     qp._lresult = string_results
+    formatted = qp._format_rquery()
+    assert formatted == "select * from somewhere where id in ('one', 'four')"
+
+    qp._lresult = unicode_results
     formatted = qp._format_rquery()
     assert formatted == "select * from somewhere where id in ('one', 'four')"
 
@@ -141,9 +147,9 @@ def test_compare_multiple():
             assert c.get_query_results() == (left_results, right_results)
 
     assert isinstance(c.lresult, QueryResult)
-    assert c.lresult.a == (1, 4)
+    assert str(c.lresult.a) == '(1, 4)'
     assert isinstance(c.rresult, QueryResult)
-    assert c.lresult.b == (2, 5)
+    assert str(c.lresult.b) == '(2, 5)'
 
     for i, result in enumerate(c.compare()):
         assert result == expected_multiple_result[i]
