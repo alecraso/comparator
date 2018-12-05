@@ -20,15 +20,16 @@ class QueryPair(object):
 
         Args:
             left : BaseDb - The "left" source database, against which the "left" query will run
-            right : BaseDb - The "right" source database, against which the "right" query will run
             lquery : string - The query to run against the "left" database
 
         Kwargs:
+            right : BaseDb - The "right" source database, against which the "right" query will run
             rquery : string - The query to run against the "right" database.
                               If not provided, lquery will be run against both.
     """
-    def __init__(self, left, right, lquery, rquery=None):
-        if not (isinstance(left, BaseDb) and isinstance(right, BaseDb)):
+    def __init__(self, left, lquery, right=None, rquery=None):
+        if not (isinstance(left, BaseDb) and (
+                isinstance(right, BaseDb) if right is not None else True)):
             raise TypeError('left and right both must be BaseDb instances')
         self._left = left
         self._right = right
@@ -52,7 +53,10 @@ class QueryPair(object):
         """
             Get the full results of the two queries
         """
-        return (self._lresult, self._rresult)
+        if self._right is None:
+            return (self._lresult, )
+        else:
+            return (self._lresult, self._rresult)
 
     @property
     def empty(self):
@@ -67,10 +71,10 @@ class QueryPair(object):
         """
             Sets the queries to use in each source database
         """
-        if rquery is None:
+        if self._right is not None and rquery is None:
             rquery = lquery
 
-        for q in (lquery, rquery):
+        for q in (lquery, rquery or ''):
             if not isinstance(q, six.string_types):
                 raise TypeError('Queries must be valid strings')
 
@@ -129,8 +133,10 @@ class QueryPair(object):
         """
         self._lresult = self._left.query(self._lquery)
 
-        rquery = self._format_rquery()
-        self._rresult = self._right.query(rquery)
+        # Skip running rquery if no right DB was provided
+        if self._right is not None:
+            rquery = self._format_rquery()
+            self._rresult = self._right.query(rquery)
 
     def clear(self):
         """
@@ -233,7 +239,7 @@ class Comparator(object):
         if qp is not None:
             self._qp = qp
         else:
-            self._qp = QueryPair(left, right, lquery, rquery)
+            self._qp = QueryPair(left, lquery, right, rquery)
 
         # Set the list of comparisons
         if comps is None:
@@ -333,7 +339,7 @@ class Comparator(object):
                 # Try to surface a more useful name if lambda is used
                 if name == '<lambda>':
                     source = inspect.getsource(comp)
-                    name = 'lambda' + re.split('lambda', source)[1].strip()
+                    name = 'lambda ' + re.split('lambda', source)[1].strip()
 
                 result = ComparatorResult(
                     self._name, name, comp(*self._qp.query_results))
@@ -368,9 +374,9 @@ class Comparator(object):
 
 class ComparatorSet(object):
     """
-        A convenience wrapper around Comparators
+        A convenience wrapper for creating multiple Comparators
 
-        This object is generally intended to be used with one of the two classmethods, from_dict or from_list.
+        This object is generally intended to be used with one of the classmethod, from_dict.
 
         It is expected that users will want to run multiple queries and comparisons against a particular database or
         databases. The ComparatorSet can be used to bundle various queries and comparisons against source databases.
@@ -480,7 +486,7 @@ class ComparatorSet(object):
                 'qp' : QueryPair - An instantiated QueryPair object
                 'comps': callable or list of callables - The comparison(s) to run against the result
             }
-            The 'lquery' and 'rquery' values are required, unless a QueryPair is provided.
+            The 'lquery' value is required, unless a QueryPair is provided.
             The 'comps' value is optional, and the 'name' value is optional but recommended.
 
             The 'default_comp' value can be used to set a fallback for missing 'comps' values. These will only be
@@ -503,9 +509,9 @@ class ComparatorSet(object):
         for d in dict_or_dicts:
             if (
                     not isinstance(d, dict)
-                    or ((d.get('lquery') is None or d.get('rquery') is None) and d.get('qp') is None)):
+                    or (d.get('lquery') is None and d.get('qp') is None)):
                 raise InvalidCompSetException(
-                    'Each value must be a dict with lquery, rquery or query pair. Problem with : %r' % d)
+                    'Each value must be a dict with lquery or query pair. Problem with : %r' % d)
 
         all_names = []
         all_query_pairs = []
@@ -515,7 +521,7 @@ class ComparatorSet(object):
             all_names.append(d.get('name', None))
             qp = d.get('qp', None)
             if qp is None:
-                qp = QueryPair(left, right, d['lquery'], d['rquery'])
+                qp = QueryPair(left, d['lquery'], right, d.get('rquery', None))
 
             all_query_pairs.append(qp)
             all_comps.append(d.get('comps', default_comp or DEFAULT_COMP))

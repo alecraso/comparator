@@ -43,21 +43,30 @@ expected_mismatch_result = [
 
 def test_query_pair():
     l, r = PostgresDb(), PostgresDb()
-    qp = QueryPair(l, r, query)
+    qp = QueryPair(l, query, r)
     assert qp._lquery == qp._rquery
     assert qp.empty
     assert qp.query_results == (None, None)
     assert qp.lresult is None
     assert qp.rresult is None
 
+    qp2 = QueryPair(l, query)
+    assert qp2._lquery == query
+    assert qp2._right is None
+    assert qp2._rquery is None
+    assert qp2.query_results == (None, )
+
     with pytest.raises(TypeError):
-        QueryPair(l, r, query, 1234)
+        QueryPair(l, r, query)
+
+    with pytest.raises(TypeError):
+        QueryPair(l, query, r, 1234)
 
 
 def test_query_pair_queries():
     l, r = PostgresDb(), PostgresDb()
     rquery = 'select * from somewhere where id in {{ a }}'
-    qp = QueryPair(l, r, query, rquery)
+    qp = QueryPair(l, query, r, rquery)
 
     with mock.patch.object(qp._left, 'query', return_value=left_results):
         with mock.patch.object(qp._right, 'query', return_value=right_results):
@@ -84,8 +93,8 @@ def test_query_pair_queries():
 
 
 def test_comparator():
-    qp1 = QueryPair(PostgresDb(), PostgresDb(), query)
-    qp2 = QueryPair(PostgresDb(), PostgresDb(), query, other_query)
+    qp1 = QueryPair(PostgresDb(), query, PostgresDb())
+    qp2 = QueryPair(PostgresDb(), query, PostgresDb(), other_query)
 
     with pytest.raises(TypeError):
         Comparator(qp1)
@@ -107,7 +116,7 @@ def test_comparator():
 
 
 def test_compare_defaults():
-    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    qp = QueryPair(PostgresDb(), query, PostgresDb())
     c = Comparator(qp=qp)
 
     with mock.patch.object(c._qp._left, 'query', return_value=left_results):
@@ -138,12 +147,25 @@ def test_compare_defaults():
     assert c.results == list()
 
 
+def test_left_only_compare():
+    qp = QueryPair(PostgresDb(), query)
+    c = Comparator(qp=qp, comps=lambda x: bool(x[0]))
+
+    with mock.patch.object(c._qp._left, 'query', return_value=left_results):
+        assert c.get_query_results() == (left_results, )
+
+    expected_comp_result = ('lambda x: bool(x[0]))', True)
+    res = c.run_comparisons()[0]
+    assert (res.name, res.result) == expected_comp_result
+    assert c._complete is True
+
+
 def test_comarison_result():
     pass
 
 
 def test_compare_multiple():
-    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    qp = QueryPair(PostgresDb(), query, PostgresDb())
     comparisons = [comps.FIRST_COMP, comps.LEN_COMP]
     c = Comparator(qp=qp, comps=comparisons)
 
@@ -161,7 +183,7 @@ def test_compare_multiple():
 
 
 def test_compare_mismatch():
-    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    qp = QueryPair(PostgresDb(), query, PostgresDb())
     comparisons = [comps.FIRST_COMP, comps.LEN_COMP]
     c = Comparator(qp=qp, comps=comparisons)
 
@@ -173,8 +195,8 @@ def test_compare_mismatch():
 
 
 def test_left_right_queries():
-    qp1 = QueryPair(PostgresDb(), PostgresDb(), query)
-    qp2 = QueryPair(PostgresDb(), PostgresDb(), query, other_query)
+    qp1 = QueryPair(PostgresDb(), query, PostgresDb())
+    qp2 = QueryPair(PostgresDb(), query, PostgresDb(), other_query)
 
     c1 = Comparator(qp=qp1)
     assert c1._qp._lquery == query
@@ -186,7 +208,7 @@ def test_left_right_queries():
 
 
 def test_results_run():
-    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    qp = QueryPair(PostgresDb(), query, PostgresDb())
     c = Comparator(qp=qp)
 
     with mock.patch.object(c._qp._left, 'query', return_value=left_results) as lq:
@@ -200,7 +222,7 @@ def test_results_run():
 
 
 def test_no_comps():
-    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    qp = QueryPair(PostgresDb(), query, PostgresDb())
     c = Comparator(qp=qp, comps='notarealcomparison')
     assert c._comps == [comps.COMPS.get(comps.DEFAULT_COMP)]
 
@@ -211,7 +233,7 @@ def test_custom_comparison():
     expected_result = [ComparatorResult('test', 'custom_comp', True),
                        ComparatorResult('test', 'lambda x, y: len(x) < len(y)', True)]
 
-    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    qp = QueryPair(PostgresDb(), query, PostgresDb())
     c = Comparator(qp=qp, comps=[custom_comp, lambda x, y: len(x) < len(y)])
 
     with mock.patch.object(c._qp._left, 'query', return_value=left_results):
@@ -226,7 +248,7 @@ def test_non_bool_comparison():
         return len(right) - len(left)
     expected_result = [ComparatorResult('test', 'custom_comp', 1)]
 
-    qp = QueryPair(PostgresDb(), PostgresDb(), query)
+    qp = QueryPair(PostgresDb(), query, PostgresDb())
     c = Comparator(qp=qp, comps=custom_comp, name='test')
 
     with mock.patch.object(c._qp._left, 'query', return_value=left_results):
@@ -258,8 +280,8 @@ def test_non_bool_comparison():
 
 def test_comparatorset():
     l, r = PostgresDb(), PostgresDb()
-    qp1 = QueryPair(l, r, query)
-    qp2 = QueryPair(l, r, query, other_query)
+    qp1 = QueryPair(l, query, r)
+    qp2 = QueryPair(l, query, r, other_query)
 
     with pytest.raises(TypeError):
         ComparatorSet()
@@ -335,13 +357,10 @@ def test_comparatorset_from_dict():
     with pytest.raises(InvalidCompSetException):
         ComparatorSet.from_dict('what', l, r)
 
-    with pytest.raises(InvalidCompSetException):
-        ComparatorSet.from_dict({'lquery': query}, l, r)
-
     cs = ComparatorSet.from_dict({'lquery': query, 'rquery': other_query}, l, r)
     assert isinstance(cs, ComparatorSet)
 
-    qp = QueryPair(l, r, query, other_query)
+    qp = QueryPair(l, query, r, other_query)
     d1 = {'qp': qp}
     d2 = {'name': 'test', 'lquery': query, 'rquery': other_query, 'comps': comps.LEN_COMP}
     cs = ComparatorSet.from_dict([d1, d2], l, r, default_comp=comps.FIRST_COMP)
