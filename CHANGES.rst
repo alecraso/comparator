@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.4.0rc2 (2018-12-05)
+---------------------
+
+- BREAKING - ``QueryPair`` arguments order has changed (``QueryPair(left, lquery, right, rquery)``)
+- ``QueryPair``, ``Comparator``, and ``ComparatorSet`` no longer require a "right" Db
+
 0.4.0rc1 (2018-11-07)
 ---------------------
 
