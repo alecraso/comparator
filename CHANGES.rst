@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.4.0rc3 (2018-12-05)
+---------------------
+
+- Adds better transaction handling in the PostgresDb class
+- Cleans up calls to connect() in the Db classes
+
 0.4.0rc2 (2018-12-05)
 ---------------------
 

@@ -66,7 +66,6 @@ class BigQueryDb(BaseDb):
             else:
                 _log.warning('Path set by creds file does not exist: %s', self._bq_creds_file)
         self._conn = Client(**self._conn_kwargs)
-        self._connected = True
 
     def _close(self):
         """
@@ -76,8 +75,7 @@ class BigQueryDb(BaseDb):
         return
 
     def _query(self, query_string):
-        if not self._connected:
-            self.connect()
+        self.connect()
         query_job = self._conn.query(query_string)
         return query_job.result()
 
@@ -98,8 +96,7 @@ class BigQueryDb(BaseDb):
             Returns:
                 list of table names
         """
-        if not self._connected:
-            self.connect()
+        self.connect()
         dataset_ref = self._conn.dataset(dataset_id)
         return [t.table_id for t in self._conn.list_tables(dataset_ref)]
 
@@ -114,7 +111,6 @@ class BigQueryDb(BaseDb):
             Returns:
                 None
         """
-        if not self._connected:
-            self.connect()
+        self.connect()
         table_ref = self._conn.dataset(dataset_id).table(table_id)
         self._conn.delete_table(table_ref)

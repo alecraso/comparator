@@ -68,8 +68,8 @@ def test_query_without_connection(mock_create_engine):
         pg = PostgresDb()
 
     pg.query(query)
-    assert pg._conn
-    assert pg.connected is True
+    assert pg._conn is None
+    assert pg.connected is False
 
 
 def test_query_vs_execute(mock_create_engine):

@@ -52,13 +52,16 @@ class PostgresDb(BaseDb):
         self._conn.close()
 
     def _query(self, query_string, **kwargs):
-        if not self._connected:
-            self.connect()
         return self._conn.execute(query_string, **kwargs)
 
     def query(self, query_string, **kwargs):
+        self.connect()
         result = self._query(query_string, **kwargs)
+        self.close()
         return QueryResult(result)
 
     def execute(self, query_string, **kwargs):
-        self._query(query_string, **kwargs)
+        self.connect()
+        with self._conn.begin():
+            self._query(query_string, **kwargs)
+        self.close()
