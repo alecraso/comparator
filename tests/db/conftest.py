@@ -23,6 +23,15 @@ class mock_engine:
         result.keys.return_value = ['first', 'second', 'third']
         return result
 
+    def begin(self):
+        return self
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args):
+        pass
+
 
 @pytest.fixture(scope='module')
 def mock_create_engine():

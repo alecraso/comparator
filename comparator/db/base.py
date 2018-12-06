@@ -42,7 +42,8 @@ class BaseDb(ABC):
         Returns:
             None
         """
-        self._connect()
+        if not self._connected:
+            self._connect()
         if self._conn:
             self._connected = True
 
