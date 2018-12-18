@@ -120,7 +120,7 @@ class QueryPair(object):
 
             for fmt, key in zip(formatting, keys):
                 try:
-                    repl = str(self._lresult[key])
+                    repl = self._lresult[key]._rquery_format()
                 except KeyError:
                     raise QueryFormatError('Key not found in lquery result : ' + key)
                 rquery = re.sub(fmt, repl, rquery)
