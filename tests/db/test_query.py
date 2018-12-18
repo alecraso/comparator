@@ -166,7 +166,7 @@ def test_queryresultrow():
     assert qrr.get('d') is None
 
 
-def test_queryresultrcol():
+def test_queryresultcol():
     itr = get_mock_iterator(ResultProxy, results)
     qr = QueryResult(itr)
     qrc = qr.a
@@ -199,6 +199,25 @@ def test_queryresultrcol():
         assert v == expected_vals[i]
 
     assert qrc[0:1] == expected_vals[0:1]
+
+
+def test_queryresultcol_rquery_format():
+    itr = get_mock_iterator(ResultProxy, results)
+    qr = QueryResult(itr)
+
+    assert qr['a']._rquery_format() == '(1, 4, 7)'
+
+    qrc2 = QueryResultCol('a', ('one', None, 'three'))
+    assert qrc2._rquery_format() == "('one', 'three')"
+
+    qrc3 = QueryResultCol('a', (None, ))
+    assert qrc3._rquery_format() == "('__xxx__EMPTYRESULT__xxx__')"
+
+    qrc4 = QueryResultCol('a', (1, None))
+    assert qrc4._rquery_format() == '(1)'
+
+    qrc5 = QueryResultCol('a', (None, 'one', None))
+    assert qrc5._rquery_format() == "('one')"
 
 
 def test_dtdecencoder():

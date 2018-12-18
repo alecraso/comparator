@@ -161,6 +161,33 @@ class QueryResultCol(object):
     def __ne__(self, other):
         return not self == other
 
+    def _rquery_format(self):
+        """
+            Special method for models.QueryPair to call when formatting the rquery
+
+            Returns:
+                str - The properly formatted values of this column
+        """
+        # Filter out None values
+        col = [v for v in self._col if v is not None]
+        _len = len(col)
+
+        # Calling str() on string type values to avoid unicode strings in python 2
+        if _len == 0:
+            # Gracefully handle an empty column
+            # Fill the result with a nonsense value to prevent false positives
+            return str("('__xxx__EMPTYRESULT__xxx__')")
+        elif _len == 1:
+            # Handle a single-value column without creating an invalid sql syntax.
+            # When formatting the rquery in a QueryPair, using the query with a
+            # value like (1,) will raise a syntax error.
+            v = col[0]
+            if isinstance(v, six.string_types):
+                v = "'{}'".format(str(v))
+            return str('({})'.format(v))
+        else:
+            return str(tuple([str(v) if isinstance(v, six.string_types) else v for v in col]))
+
 
 class QueryResult(object):
     def __init__(self, query_iterator=None):
