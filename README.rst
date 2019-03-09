@@ -24,20 +24,21 @@ Overview
 
 .. code:: python
 
+   from spackl import db
+
    import comparator as cpt
 
-   conf = cpt.DbConfig()
-
-   l = cpt.db.PostgresDb(**conf.default)
-   r = cpt.db.PostgresDb(**conf.other_db)
+   conf = db.Config()
+   l = db.Postgres(**conf.default)
+   r = db.Postgres(**conf.other_db)
    query = 'SELECT * FROM my_table ORDER BY 1'
 
-   c = cpt.Comparator(l, r, query)
+   c = cpt.Comparator(l, query, r)
    c.run_comparisons()
 
 ::
 
-   [('first_eq_comp', True)]
+   [('basic_comp', True)]
 
 Included Comparisons
 ~~~~~~~~~~~~~~~~~~~~
@@ -49,7 +50,7 @@ passed using constants.
 
    from comparator.comps import BASIC_COMP, LEN_COMP
 
-   c = cpt.Comparator(l, r, query, comps=[BASIC_COMP, LEN_COMP])
+   c = cpt.Comparator(l, query, r, comps=[BASIC_COMP, LEN_COMP])
    c.run_comparisons()
 
 ::
@@ -66,9 +67,9 @@ raise exceptions if that’s your speed.
 
    lq = 'SELECT * FROM my_table ORDER BY 1'
    rq = 'SELECT id, uuid, name FROM reporting.my_table ORDER BY 1'
-   comparisons = [cpt.BASIC_COMP, cpt.LEN_COMP]
+   comparisons = [BASIC_COMP, LEN_COMP]
 
-   c = cpt.Comparator(l, r, left_query=lq, right_query=rq, comps=comparisons)
+   c = cpt.Comparator(l, lq, r, rq, comps=comparisons)
 
    for result in c.compare():
        if not result:
@@ -78,10 +79,9 @@ Custom Comparisons
 ~~~~~~~~~~~~~~~~~~
 
 You’ll probably want to define your own comparison checks. You can do so
-by defining functions that accept ``left`` and ``right`` args, which, if
-coming from one of the included database classes, will be a QueryResult
-class representing your query’s output. Perform whatever magic you like,
-and return a boolean (or not… your choice).
+by defining functions that accept ``left`` and ``right`` args, which correspond
+to the results of the queries against your "left" and "right" data source,
+respectively. Perform whatever magic you like, and return a boolean (or not… your choice).
 
 .. code:: python
 
@@ -92,7 +92,7 @@ and return a boolean (or not… your choice).
 
    def totals_are_equal(left, right):
        # Return True if sum(left) == sum(right)
-       sl = sr = 0
+       sl, sr = 0, 0
        for row in left:
            sl += int(row[1])
        for row in right:
@@ -100,7 +100,7 @@ and return a boolean (or not… your choice).
        return sl == sr
 
 
-   c = cpt.Comparator(l, r, query, comps=[left_is_longer, totals_are_equal])
+   c = cpt.Comparator(l, query, r, comps=[left_is_longer, totals_are_equal])
    c.run_comparisons()
 
 ::
@@ -123,7 +123,7 @@ resulting value of such a comparison is simple.
        return len(left) - len(right)
 
 
-   c = cpt.Comparator(l, r, query, comps=len_diff)
+   c = cpt.Comparator(l, query, r, comps=len_diff)
    res = c.run_comparisons()[0]
    if res == 0:
        print('They match')
@@ -131,6 +131,10 @@ resulting value of such a comparison is simple.
        print('Left is shorter by {}'.format(res.result))
    else:
        print('Left is longer by {}'.format(res.result))
+
+It's recommended that you use the ``spackl`` package for instantiating your
+"left" and "right" data source objects (``pip install spackl``). This package
+was originally part of ``comparator``, and provides the following functionality:
 
 Query results are contained in the ``QueryResult`` class, which provides
 simple yet powerful ways to look up and access the output of the query.
@@ -141,7 +145,10 @@ lookup functionality, as well as standard operators (<, >, =, etc).
 
 .. code:: python
 
-   pg = cpt.db.PostgresDb(**conf.default)
+   from spackl import db
+
+   conf = db.Config()
+   pg = db.Postgres(**conf.default)
    res = pg.query(query_string)
 
    res          # [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'b': 5, 'c': 6}, {'a': 7, 'b': 8, 'c': 9}]
@@ -162,6 +169,10 @@ These result sets can be used to great effect in comparison callables.
 For example, accessing the result of a query as a pandas DataFrame
 allows for an endless variety of checks/manipulations do be done on a
 single query output.
+
+Support is being added to ``spackl`` to allow for querying from files and APIs
+using the same methods, allowing for easy comparison between many disparate
+data sources. Stay tuned.
 
 .. |Comparator| image:: https://raw.githubusercontent.com/aaronbiller/comparator/master/docs/comparator.jpg
 .. |pypi| image:: https://img.shields.io/pypi/v/comparator.svg
