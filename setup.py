@@ -40,6 +40,7 @@ setup(
         'pytest',
         'pytest-cov',
         'mock',
+        'spackl'
     ],
     install_requires=[
         'future==0.16.0',

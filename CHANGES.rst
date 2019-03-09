@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.4.0 (2019-03-09)
+------------------
+
+- BREAKING - All ``source`` modules and methods have been stripped out
+- Functionality has been moved to the ``spackl`` package (``pip install spackl``)
+- The ``comparator`` package will expect ``spackl`` to be used for all ``left`` and ``right`` data sources
+
 0.4.0rc3 (2018-12-05)
 ---------------------
 
