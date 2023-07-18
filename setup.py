@@ -43,7 +43,7 @@ setup(
         'spackl'
     ],
     install_requires=[
-        'future==0.16.0',
+        'future==0.18.3',
         'google-cloud-bigquery==1.5.0',
         'psycopg2-binary==2.7.5',
         'PyYAML',
