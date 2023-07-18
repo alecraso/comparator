@@ -47,7 +47,7 @@ setup(
         'google-cloud-bigquery==1.5.0',
         'psycopg2-binary==2.7.5',
         'PyYAML',
-        'SQLAlchemy==1.2.11',
+        'SQLAlchemy==1.3.0',
         'sqlalchemy-redshift==0.7.1',
         'pandas>=0.22.0',
         'pytest-runner==4.2',
